@@ -15,21 +15,68 @@ const debounce = (func, wait) => {
   };
 };
 
+const MAX_SAFE_QUOTA = 4 * 1024 * 1024; // 4MB safe threshold
+
+export const checkStorageAvailability = () => {
+  try {
+    const storage = window.localStorage;
+    const testKey = '__storage_test__';
+    storage.setItem(testKey, testKey);
+    storage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+export const getStorageUsage = () => {
+  let total = 0;
+  for (let key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += localStorage[key].length;
+    }
+  }
+  return total;
+};
+
 // Save state to localStorage with debouncing
 export const saveState = debounce((state) => {
+  if (!checkStorageAvailability()) {
+    console.warn('⚠️ localStorage is not available — draft progress will not persist.');
+    return;
+  }
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const stateString = JSON.stringify(state);
+    const projectedSize = getStorageUsage() + stateString.length;
+
+    if (projectedSize > MAX_SAFE_QUOTA) {
+      console.warn('⚠️ Storage usage nearing safe limit (4MB). Consider clearing old draft history.');
+    }
+
+    localStorage.setItem(STORAGE_KEY, stateString);
   } catch (err) {
-    console.error('Error saving state to localStorage:', err);
+    if (err.name === 'QuotaExceededError') {
+      console.error('❌ Storage quota exceeded — unable to save draft state.');
+    } else {
+      console.error('❌ Error saving draft state:', err);
+    }
   }
 }, 50);
 
 // Add flush on window unload
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
+    if (!checkStorageAvailability()) {
+      return;
+    }
     const state = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (state) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.error('❌ Error flushing state on unload:', err);
+      }
     }
   });
 }
