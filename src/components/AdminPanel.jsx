@@ -118,12 +118,19 @@ export default function AdminPanel() {
           p.name === lastDraftedPlayer.name ? { ...p, drafted: false } : p
         );
         setPlayers(updatedPlayers);
-        setDraftHistory(prev => prev.slice(0, -1));
-        const previousPick = draftHistory.length > 1 ? draftHistory[draftHistory.length - 2] : null;
+        
+        // Get the previous pick before updating history
+        const newHistory = draftHistory.slice(0, -1);
+        const previousPick = newHistory[newHistory.length - 1] || null;
+        
+        // Update all related state
+        setDraftHistory(newHistory);
         setSelectedPlayer(previousPick);
         setCurrentPickIndex(prev => prev - 1);
         setTimerSeconds(defaultDuration);
         setIsTimerRunning(false);
+        
+        // Broadcast updates
         if (channelRef.current) {
           channelRef.current.postMessage({
             type: 'PLAYER_DRAFTED',

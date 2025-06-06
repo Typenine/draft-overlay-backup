@@ -87,7 +87,7 @@ export default function OverlayDisplay() {
       channelRef.current.removeEventListener('message', handleMessage);
       channelRef.current.close();
     };
-  }, []);
+  }, [draftOrder]);
 
   // Find current team
   const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];
