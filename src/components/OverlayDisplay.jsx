@@ -51,14 +51,20 @@ export default function OverlayDisplay() {
       
       if (event.data.type === 'PLAYER_DRAFTED') {
         const { selectedPlayer: newSelectedPlayer } = event.data.payload;
-        console.log('[Message] New player drafted:', newSelectedPlayer.name);
-        
-        // Find the drafting team and show the announcement
-        const draftingTeam = teams.find(t => t.id === draftOrder[newSelectedPlayer.pickIndex]);
-        setRecentDraftedPlayer({
-          player: newSelectedPlayer,
-          team: draftingTeam
-        });
+        if (newSelectedPlayer) {
+          console.log('[Message] New player drafted:', newSelectedPlayer.name);
+          
+          // Find the drafting team and show the announcement
+          const draftingTeam = teams.find(t => t.id === draftOrder[newSelectedPlayer.pickIndex]);
+          setRecentDraftedPlayer({
+            player: newSelectedPlayer,
+            team: draftingTeam
+          });
+        } else {
+          // If selectedPlayer is null, clear the recent draft
+          setRecentDraftedPlayer(null);
+          console.log('[Message] Clearing recent draft display');
+        }
       } 
       else if (event.data.type === 'STATE_UPDATE') {
         const { currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder: newDraftOrder, selectedPlayer: newSelectedPlayer } = event.data.payload;

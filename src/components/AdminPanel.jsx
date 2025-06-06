@@ -20,6 +20,7 @@ export default function AdminPanel() {
 
   // Core draft state
   const [currentPickIndex, setCurrentPickIndex] = useState(savedState?.currentPickIndex ?? 0);
+  const [draftHistory, setDraftHistory] = useState(savedState?.draftHistory ?? []);
   const [searchQuery, setSearchQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState('All');
   const [draftOrder, setDraftOrder] = useState(savedState?.draftOrder ?? defaultDraftOrder);
@@ -56,7 +57,8 @@ export default function AdminPanel() {
       draftOrder,
       defaultDuration,
       players,
-      selectedPlayer
+      selectedPlayer,
+      draftHistory
     });
   }, [currentPickIndex, timerSeconds, isTimerRunning, draftOrder, defaultDuration, players, selectedPlayer]);
 
@@ -107,6 +109,31 @@ export default function AdminPanel() {
       broadcastState();
     }
   }, [currentPickIndex, defaultDuration, broadcastState]);
+
+  const handleUndoPick = useCallback(() => {
+    if (currentPickIndex > 0) {
+      const lastDraftedPlayer = draftHistory[draftHistory.length - 1];
+      if (lastDraftedPlayer) {
+        const updatedPlayers = players.map(p =>
+          p.name === lastDraftedPlayer.name ? { ...p, drafted: false } : p
+        );
+        setPlayers(updatedPlayers);
+        setDraftHistory(prev => prev.slice(0, -1));
+        const previousPick = draftHistory.length > 1 ? draftHistory[draftHistory.length - 2] : null;
+        setSelectedPlayer(previousPick);
+        setCurrentPickIndex(prev => prev - 1);
+        setTimerSeconds(defaultDuration);
+        setIsTimerRunning(false);
+        if (channelRef.current) {
+          channelRef.current.postMessage({
+            type: 'PLAYER_DRAFTED',
+            payload: { selectedPlayer: previousPick }
+          });
+          broadcastState();
+        }
+      }
+    }
+  }, [currentPickIndex, players, defaultDuration, broadcastState, draftHistory]);
 
   // Timer effect with auto-advance
   useEffect(() => {
@@ -175,20 +202,30 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex space-x-4 mb-4">
               <button
                 onClick={handlePreviousPick}
                 disabled={currentPickIndex === 0}
-                className={`flex-1 p-3 rounded-lg font-semibold text-lg transition-all ${currentPickIndex === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:scale-105'}`}
+                className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={currentPickIndex === 0 ? "At the first pick" : "Go to previous pick"}
               >
-                ⬅️ Previous Pick
+                Previous Pick
+              </button>
+              <button
+                onClick={handleUndoPick}
+                disabled={!selectedPlayer || selectedPlayer.pickIndex !== currentPickIndex - 1}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!selectedPlayer || selectedPlayer.pickIndex !== currentPickIndex - 1 ? "Can only undo the last pick" : "Undo last pick"}
+              >
+                Undo Pick
               </button>
               <button
                 onClick={handleNextPick}
-                disabled={currentPickIndex === draftOrder.length - 1}
-                className={`flex-1 p-3 rounded-lg font-semibold text-lg transition-all ${currentPickIndex === draftOrder.length - 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white shadow-lg hover:scale-105'}`}
+                disabled={currentPickIndex >= draftOrder.length - 1}
+                className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={currentPickIndex >= draftOrder.length - 1 ? "At the last pick" : "Go to next pick"}
               >
-                Next Pick ➡️
+                Next Pick
               </button>
             </div>
           </section>
@@ -449,6 +486,7 @@ export default function AdminPanel() {
                               );
                               setPlayers(updatedPlayers);
                               setSelectedPlayer(playerWithPick);
+                              setDraftHistory(prev => [...prev, playerWithPick]);
 
                               // First, broadcast the player selection
                               if (channelRef.current) {
