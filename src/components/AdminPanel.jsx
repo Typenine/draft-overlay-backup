@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teams } from '../teams';
 import { defaultDraftOrder, TOTAL_ROUNDS, TEAMS_PER_ROUND } from '../draftOrder';
+import { draftPlayers } from '../draftPlayers';
 import { 
   loadState, 
   saveState, 
@@ -9,16 +10,27 @@ import {
   loadDefaultTimerDuration,
   saveDefaultTimerDuration
 } from '../utils/storage';
+import { CountdownTimer } from './CountdownTimer';
 
 export default function AdminPanel() {
   // Initialize state from localStorage or defaults
   const savedState = loadState();
   const savedDefaultDuration = loadDefaultTimerDuration() || 120;
+  
 
   // Core draft state
   const [currentPickIndex, setCurrentPickIndex] = useState(savedState?.currentPickIndex ?? 0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [positionFilter, setPositionFilter] = useState('All');
   const [draftOrder, setDraftOrder] = useState(savedState?.draftOrder ?? defaultDraftOrder);
   const [editableDraftOrder, setEditableDraftOrder] = useState([...(savedState?.draftOrder ?? defaultDraftOrder)]);
+  
+  // Fixed order for position filters
+  const positions = ['All', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF'];
+
+  // Player selection state
+  const [selectedPlayer, setSelectedPlayer] = useState(savedState?.selectedPlayer ?? null);
+  const [players, setPlayers] = useState(savedState?.players ?? draftPlayers);
 
   // Timer state
   const [timerSeconds, setTimerSeconds] = useState(savedState?.timerSeconds ?? savedDefaultDuration);
@@ -42,9 +54,11 @@ export default function AdminPanel() {
       timerSeconds,
       isTimerRunning,
       draftOrder,
-      defaultDuration
+      defaultDuration,
+      players,
+      selectedPlayer
     });
-  }, [currentPickIndex, timerSeconds, isTimerRunning, draftOrder, defaultDuration]);
+  }, [currentPickIndex, timerSeconds, isTimerRunning, draftOrder, defaultDuration, players, selectedPlayer]);
 
   // Initialize channel
   useEffect(() => {
@@ -62,11 +76,14 @@ export default function AdminPanel() {
           currentPickIndex,
           timerSeconds,
           isTimerRunning,
-          draftOrder
+          draftOrder,
+          selectedPlayer,
+          // Only include draftingTeam if there's a selected player
+          ...(selectedPlayer && { draftingTeam: teams.find(t => t.id === currentTeamId) })
         }
       });
     }
-  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder]);
+  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer]);
 
   // Broadcast state whenever it changes
   useEffect(() => {
@@ -139,39 +156,18 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-xl p-8">
-        <div className="space-y-8">
-          {/* Header Section */}
-          <header className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Draft Control Panel</h1>
-            <p className="text-gray-600">Manage teams and control the draft timer</p>
-          </header>
+    <div className="min-h-screen bg-gray-100 py-4 flex flex-col sm:py-8">
+      <div className="relative py-2 px-4 mx-auto w-full max-w-7xl">
+        <div className="relative px-4 py-6 bg-white shadow-lg sm:rounded-3xl sm:p-10">
+          <div className="mx-auto">
+            <h1 className="text-2xl font-bold text-gray-900">Draft Control Panel</h1>
+          </div>
+          <p className="text-gray-600">Manage teams and control the draft timer</p>
 
-          {/* Current Team Section */}
-          <section className="p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-xl font-semibold text-gray-700 mb-3">Current Team</h3>
-            <div className="flex items-center space-x-4">
-              <img 
-                src={teams.find(t => t.id === currentTeamId)?.logo} 
-                alt="Team logo" 
-                className="w-16 h-16 object-contain"
-              />
-              <div>
-                <div className="text-xl font-bold text-gray-800">
-                  {teams.find(t => t.id === currentTeamId)?.name}
-                </div>
-                <div className="text-gray-600">
-                  {teams.find(t => t.id === currentTeamId)?.owner}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Draft Progress Section */}
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-gray-800">Draft Progress</h2>
+          {/* Draft Progress */}
+          <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Draft Progress</h2>
               <div className="text-lg font-medium text-gray-600">
                 Pick {currentPickIndex + 1} of {draftOrder.length}
                 <span className="mx-2">|</span>
@@ -197,9 +193,29 @@ export default function AdminPanel() {
             </div>
           </section>
 
+          {/* Current Team Section */}
+          <section className="p-4 bg-gray-50 rounded-lg mb-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-3">Current Team</h3>
+            <div className="flex items-center space-x-4">
+              <img 
+                src={teams.find(t => t.id === currentTeamId)?.logo} 
+                alt="Team logo" 
+                className="w-16 h-16 object-contain"
+              />
+              <div>
+                <div className="text-xl font-bold text-gray-800">
+                  {teams.find(t => t.id === currentTeamId)?.name}
+                </div>
+                <div className="text-gray-600">
+                  {teams.find(t => t.id === currentTeamId)?.owner}
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* Timer Controls */}
-          <section className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Timer Controls</h2>
+          <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Timer Controls</h2>
             
             <div className="flex flex-col sm:flex-row items-start gap-6">
               <div className="flex-1 w-full sm:w-auto space-y-4">
@@ -215,7 +231,7 @@ export default function AdminPanel() {
                         setTimerSeconds(newDuration);
                       }
                     }}
-                    className="p-2 text-sm bg-white border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="p-2 text-sm bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="60">1 minute</option>
                     <option value="120">2 minutes</option>
@@ -252,7 +268,7 @@ export default function AdminPanel() {
           </section>
 
           {/* Draft Order Editor */}
-          <section className="space-y-3">
+          <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-semibold text-gray-800">Draft Order</h2>
               <button
@@ -322,7 +338,7 @@ export default function AdminPanel() {
                               <select
                                 value={teamId}
                                 onChange={(e) => handleDraftOrderChange(globalIndex, e.target.value)}
-                                className="p-2 text-sm bg-white border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                className="p-2 text-sm bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               >
                                 {teams.map(team => (
                                   <option key={team.id} value={team.id}>
@@ -340,6 +356,125 @@ export default function AdminPanel() {
               </div>
             )}
           </section>
+
+          {/* Available Players */}
+          <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Available Players</h2>
+              <button
+                onClick={() => {
+                  setPlayers(draftPlayers);
+                  setSelectedPlayer(null);
+                  broadcastState();
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+              >
+                Reset Player Pool
+              </button>
+            </div>
+            {/* Search and filter controls */}
+            <div className="mb-4 space-y-3">
+              <div className="flex gap-4 items-center">
+                <input
+                  type="text"
+                  placeholder="Search players..."
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              {/* Position filter buttons */}
+              <div className="flex gap-2">
+                {positions.map(position => (
+                  <button
+                    key={position}
+                    onClick={() => setPositionFilter(position)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      positionFilter === position
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {position}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Player list */}
+            <div>
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Rank</th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Name</th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Position</th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Pos Rank</th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-48">College</th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-48">NFL Team</th>
+                    <th scope="col" className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {players
+                    .filter(player => 
+                      // Filter out drafted players
+                      !player.drafted && 
+                      // Apply position filter
+                      (positionFilter === 'All' || player.position === positionFilter) &&
+                      // Apply search filter
+                      player.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((player, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 w-16 text-center">{player.overallRank || '-'}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900 w-48 text-center">{player.name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 w-24 text-center">{player.position}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 w-24 text-center">{player.positionRank || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 w-48 text-center">{player.college}</td>
+                        <td className="px-4 py-3 text-sm text-gray-500 w-48 text-center">{player.nflTeam}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-center">
+                          <button
+                            onClick={() => {
+                              // Create selected player with current pick index and timestamp
+                              const playerWithPick = {
+                                ...player,
+                                pickIndex: currentPickIndex, // Store which pick this was
+                                timestamp: Date.now() // Add timestamp to identify new picks
+                              };
+                              
+                              // Update player states
+                              const updatedPlayers = players.map(p =>
+                                p.name === player.name ? { ...p, drafted: true } : p
+                              );
+                              setPlayers(updatedPlayers);
+                              setSelectedPlayer(playerWithPick);
+
+                              // First, broadcast the player selection
+                              if (channelRef.current) {
+                                channelRef.current.postMessage({
+                                  type: 'PLAYER_DRAFTED',
+                                  payload: {
+                                    selectedPlayer: playerWithPick
+                                  }
+                                });
+                              }
+
+                              // Advance to next pick
+                              handleNextPick();
+                            }}
+                            className="text-indigo-600 hover:text-indigo-900 font-semibold"
+                          >
+                            Draft
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
         </div>
       </div>
     </div>

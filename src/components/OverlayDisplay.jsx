@@ -12,7 +12,28 @@ export default function OverlayDisplay() {
   const [timerSeconds, setTimerSeconds] = useState(savedState?.timerSeconds ?? 120);
   const [isTimerRunning, setIsTimerRunning] = useState(savedState?.isTimerRunning ?? false);
   const [draftOrder, setDraftOrder] = useState(savedState?.draftOrder ?? defaultDraftOrder);
+  const [recentDraftedPlayer, setRecentDraftedPlayer] = useState(null);
+  const [lastPickTimestamp, setLastPickTimestamp] = useState(0);
   const channelRef = useRef(null);
+
+  // Effect to clear the drafted player after 10 seconds
+  useEffect(() => {
+    console.log('[Timer] recentDraftedPlayer changed:', 
+      recentDraftedPlayer ? recentDraftedPlayer.player.name : 'null');
+    
+    if (recentDraftedPlayer) {
+      console.log('[Timer] Starting 10s timer for:', recentDraftedPlayer.player.name);
+      const timer = setTimeout(() => {
+        console.log('[Timer] Time up - clearing:', recentDraftedPlayer.player.name);
+        setRecentDraftedPlayer(null);
+      }, 10000);
+      
+      return () => {
+        console.log('[Timer] Cleanup called for:', recentDraftedPlayer.player.name);
+        clearTimeout(timer);
+      };
+    }
+  }, [recentDraftedPlayer]);
 
   // Get next two teams
   const nextTeams = [
@@ -26,9 +47,21 @@ export default function OverlayDisplay() {
 
     // Set up message listener
     const handleMessage = (event) => {
-      console.log('Received state update:', event.data);
-      if (event.data.type === 'STATE_UPDATE') {
-        const { currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder: newDraftOrder } = event.data.payload;
+      console.log('[Message] Received message type:', event.data.type);
+      
+      if (event.data.type === 'PLAYER_DRAFTED') {
+        const { selectedPlayer: newSelectedPlayer } = event.data.payload;
+        console.log('[Message] New player drafted:', newSelectedPlayer.name);
+        
+        // Find the drafting team and show the announcement
+        const draftingTeam = teams.find(t => t.id === draftOrder[newSelectedPlayer.pickIndex]);
+        setRecentDraftedPlayer({
+          player: newSelectedPlayer,
+          team: draftingTeam
+        });
+      } 
+      else if (event.data.type === 'STATE_UPDATE') {
+        const { currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder: newDraftOrder, selectedPlayer: newSelectedPlayer } = event.data.payload;
         setCurrentTeamId(currentTeamId);
         setCurrentPickIndex(currentPickIndex);
         setTimerSeconds(timerSeconds);
@@ -36,6 +69,8 @@ export default function OverlayDisplay() {
         if (newDraftOrder) {
           setDraftOrder(newDraftOrder);
         }
+        // For regular state updates, just update the state
+        // but don't show player announcements
       }
     };
 
@@ -89,6 +124,29 @@ export default function OverlayDisplay() {
           seconds={timerSeconds}
           isRunning={isTimerRunning}
         />
+
+        {/* Draft Announcement */}
+        {recentDraftedPlayer && (
+          <div 
+            className="mt-6 pt-6 border-t border-gray-700 transition-all duration-1000 opacity-100"
+            style={{
+              animation: 'fadeInOut 10s ease-in-out'
+            }}
+          >
+            <div 
+              className="text-2xl font-bold" 
+              style={{ color: recentDraftedPlayer.team.colors[0] }}
+            >
+              {recentDraftedPlayer.team.name} selects:
+            </div>
+            <div className="mt-4 text-3xl font-bold text-white">
+              {recentDraftedPlayer.player.name}
+            </div>
+            <div className="mt-2 text-xl text-gray-300">
+              {recentDraftedPlayer.player.position} - {recentDraftedPlayer.player.nflTeam}
+            </div>
+          </div>
+        )}
 
         {/* Next Teams */}
         {nextTeams.length > 0 && (
