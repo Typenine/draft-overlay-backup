@@ -473,11 +473,18 @@ export default function AdminPanel() {
                         <td className="px-4 py-3 text-sm font-medium text-center">
                           <button
                             onClick={() => {
+                              // Prevent drafting if player is already drafted
+                              if (player.drafted) {
+                                console.warn('Player already drafted:', player.name);
+                                return;
+                              }
+
                               // Create selected player with current pick index and timestamp
                               const playerWithPick = {
                                 ...player,
                                 pickIndex: currentPickIndex, // Store which pick this was
-                                timestamp: Date.now() // Add timestamp to identify new picks
+                                timestamp: Date.now(), // Add timestamp to identify new picks
+                                drafted: true // Ensure drafted flag is set
                               };
                               
                               // Update player states
@@ -510,6 +517,34 @@ export default function AdminPanel() {
                     ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Reset Players Button */}
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => {
+                  // Reset all players to undrafted
+                  const resetPlayers = players.map(p => ({ ...p, drafted: false }));
+                  setPlayers(resetPlayers);
+                  setSelectedPlayer(null);
+                  setDraftHistory([]);
+                  setCurrentPickIndex(0);
+                  setTimerSeconds(defaultDuration);
+                  setIsTimerRunning(false);
+                  
+                  // Broadcast the reset
+                  if (channelRef.current) {
+                    channelRef.current.postMessage({
+                      type: 'PLAYER_DRAFTED',
+                      payload: { selectedPlayer: null }
+                    });
+                    broadcastState();
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Reset Player Pool
+              </button>
             </div>
           </section>
 
