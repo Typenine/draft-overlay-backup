@@ -10,7 +10,7 @@ import {
   loadDefaultTimerDuration,
   saveDefaultTimerDuration
 } from '../utils/storage';
-import { CountdownTimer } from './CountdownTimer';
+import CountdownTimer from './CountdownTimer';
 
 export default function AdminPanel() {
   // Initialize state from localStorage or defaults
