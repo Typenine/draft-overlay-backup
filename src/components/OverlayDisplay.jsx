@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, startTransition } from 'react';
+import React, { useState, useEffect, useRef, startTransition, useCallback } from 'react';
 import { teams } from '../teams';
 import CountdownTimer from './CountdownTimer';
 import { defaultDraftOrder } from '../draftOrder';
@@ -13,27 +13,25 @@ export default function OverlayDisplay() {
   const [isTimerRunning, setIsTimerRunning] = useState(savedState?.isTimerRunning ?? false);
   const [draftOrder, setDraftOrder] = useState(savedState?.draftOrder ?? defaultDraftOrder);
   const [recentDraftedPlayer, setRecentDraftedPlayer] = useState(null);
-  const [lastPickTimestamp, setLastPickTimestamp] = useState(0);
+  const [lastPickTimestamp, setLastPickTimestamp] = useState(Date.now());
   const channelRef = useRef(null);
 
   // Effect to clear the drafted player after 10 seconds
   useEffect(() => {
-    console.log('[Timer] recentDraftedPlayer changed:', 
-      recentDraftedPlayer ? recentDraftedPlayer.player.name : 'null');
-    
     if (recentDraftedPlayer) {
-      console.log('[Timer] Starting 10s timer for:', recentDraftedPlayer.player.name);
+      const currentTimestamp = Date.now();
+      setLastPickTimestamp(currentTimestamp);
+      
       const timer = setTimeout(() => {
-        console.log('[Timer] Time up - clearing:', recentDraftedPlayer.player.name);
-        setRecentDraftedPlayer(null);
+        // Only clear if this is still the most recent pick
+        if (lastPickTimestamp === currentTimestamp) {
+          setRecentDraftedPlayer(null);
+        }
       }, 10000);
       
-      return () => {
-        console.log('[Timer] Cleanup called for:', recentDraftedPlayer.player.name);
-        clearTimeout(timer);
-      };
+      return () => clearTimeout(timer);
     }
-  }, [recentDraftedPlayer]);
+  }, [recentDraftedPlayer, lastPickTimestamp]);
 
   // Get next two teams
   const nextTeams = [
@@ -41,10 +39,13 @@ export default function OverlayDisplay() {
     teams.find(team => team.id === draftOrder[currentPickIndex + 2])
   ].filter(Boolean); // Remove undefined values
 
+  // Memoize team finding function to avoid stale closures
+  const findTeamById = useCallback((id) => teams.find(t => t.id === id), []);
+
   useEffect(() => {
     // Initialize channel
     channelRef.current = new BroadcastChannel('draft-overlay');
-
+    
     // Set up message listener
     const handleMessage = (event) => {
       console.log('[Message] Received message type:', event.data.type);
@@ -55,7 +56,7 @@ export default function OverlayDisplay() {
           console.log('[Message] New player drafted:', newSelectedPlayer.name);
           
           // Find the drafting team and show the announcement
-          const draftingTeam = teams.find(t => t.id === draftOrder[newSelectedPlayer.pickIndex]);
+          const draftingTeam = findTeamById(draftOrder[newSelectedPlayer.pickIndex]);
           setRecentDraftedPlayer({
             player: newSelectedPlayer,
             team: draftingTeam
@@ -92,7 +93,7 @@ export default function OverlayDisplay() {
       channelRef.current.removeEventListener('message', handleMessage);
       channelRef.current.close();
     };
-  }, [draftOrder]);
+  }, [findTeamById]);
 
   // Find current team
   const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];

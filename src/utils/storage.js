@@ -22,7 +22,17 @@ export const saveState = debounce((state) => {
   } catch (err) {
     console.error('Error saving state to localStorage:', err);
   }
-}, 100);
+}, 50);
+
+// Add flush on window unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    const state = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+  });
+}
 
 // Load state from localStorage
 export const loadState = () => {

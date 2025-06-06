@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import { teams } from '../teams';
 import { defaultDraftOrder, TOTAL_ROUNDS, TEAMS_PER_ROUND } from '../draftOrder';
 import { draftPlayers } from '../draftPlayers';
@@ -21,8 +21,8 @@ export default function AdminPanel() {
   // Core draft state
   const [currentPickIndex, setCurrentPickIndex] = useState(savedState?.currentPickIndex ?? 0);
   const [draftHistory, setDraftHistory] = useState(savedState?.draftHistory ?? []);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [positionFilter, setPositionFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState(savedState?.searchQuery ?? '');
+  const [positionFilter, setPositionFilter] = useState(savedState?.positionFilter ?? 'All');
   const [draftOrder, setDraftOrder] = useState(savedState?.draftOrder ?? defaultDraftOrder);
   const [editableDraftOrder, setEditableDraftOrder] = useState([...(savedState?.draftOrder ?? defaultDraftOrder)]);
   
@@ -57,10 +57,12 @@ export default function AdminPanel() {
       draftOrder,
       isTimerRunning,
       draftHistory,
-      players,  // Restore players to maintain drafted status
-      defaultDuration  // Restore defaultDuration for timer consistency
+      players,
+      defaultDuration,
+      searchQuery,     // Add search persistence
+      positionFilter   // Add filter persistence
     });
-  }, [currentPickIndex, timerSeconds, selectedPlayer, draftOrder, isTimerRunning, draftHistory, players, defaultDuration]);
+  }, [currentPickIndex, timerSeconds, selectedPlayer, draftOrder, isTimerRunning, draftHistory, players, defaultDuration, searchQuery, positionFilter]);
 
   // Initialize channel
   useEffect(() => {
@@ -68,24 +70,27 @@ export default function AdminPanel() {
     return () => channelRef.current.close();
   }, []);
 
-  // Broadcast state function
+  // Broadcast state function with guaranteed fresh state
   const broadcastState = useCallback(() => {
-    if (channelRef.current) {
-      channelRef.current.postMessage({
-        type: 'STATE_UPDATE',
-        payload: {
-          currentTeamId,
-          currentPickIndex,
-          timerSeconds,
-          isTimerRunning,
-          draftOrder,
-          selectedPlayer,
-          // Only include draftingTeam if there's a selected player
-          ...(selectedPlayer && { draftingTeam: teams.find(t => t.id === currentTeamId) })
-        }
-      });
-    }
-  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer]);
+    // Use setTimeout to ensure we're broadcasting after state updates
+    setTimeout(() => {
+      if (channelRef.current) {
+        channelRef.current.postMessage({
+          type: 'STATE_UPDATE',
+          payload: {
+            currentTeamId,
+            currentPickIndex,
+            timerSeconds,
+            isTimerRunning,
+            draftOrder,
+            selectedPlayer,
+            // Only include draftingTeam if there's a selected player
+            ...(selectedPlayer && { draftingTeam: teams.find(t => t.id === currentTeamId) })
+          }
+        });
+      }
+    }, 0);
+  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer, teams]);
 
   // Broadcast state whenever it changes
   useEffect(() => {
@@ -158,10 +163,12 @@ export default function AdminPanel() {
     return () => clearInterval(interval);
   }, [isTimerRunning, timerSeconds, currentPickIndex, draftOrder.length, handleNextPick]);
 
-  const handleTimerToggle = () => {
-    setIsTimerRunning(prev => !prev);
+  const handleTimerToggle = useCallback(() => {
+    startTransition(() => {
+      setIsTimerRunning(prev => !prev);
+    });
     broadcastState();
-  };
+  }, [broadcastState]);
 
   const handleTimerReset = () => {
     setTimerSeconds(defaultDuration);
@@ -169,12 +176,19 @@ export default function AdminPanel() {
     broadcastState();
   };
 
-  const handleDraftOrderChange = (index, teamId) => {
-    const newOrder = [...editableDraftOrder];
-    newOrder[index] = Number(teamId);
-    setEditableDraftOrder(newOrder);
-    setErrorMessage('');
-  };
+  const handleDraftOrderChange = useCallback((index, teamId) => {
+    startTransition(() => {
+      const newOrder = [...editableDraftOrder];
+      newOrder[index] = parseInt(teamId);
+      setEditableDraftOrder(newOrder);
+      // Validate immediately
+      const isValid = newOrder.every(id => teams.some(t => t.id === id));
+      if (isValid) {
+        setDraftOrder(newOrder);
+        broadcastState();
+      }
+    });
+  }, [editableDraftOrder, teams, broadcastState]);
 
   const validateAndApplyOrder = () => {
     setDraftOrder(editableDraftOrder);
@@ -200,6 +214,36 @@ export default function AdminPanel() {
 
           {/* Draft Progress */}
           <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={() => {
+                  // Batch reset state updates
+                  startTransition(() => {
+                    const resetPlayers = players.map(p => ({ ...p, drafted: false }));
+                    setPlayers(resetPlayers);
+                    setSelectedPlayer(null);
+                    setDraftHistory([]);
+                    setCurrentPickIndex(0);
+                    setTimerSeconds(defaultDuration);
+                    setIsTimerRunning(false);
+                  });
+                  
+                  // Broadcast after state updates
+                  if (channelRef.current) {
+                    setTimeout(() => {
+                      channelRef.current.postMessage({
+                        type: 'PLAYER_DRAFTED',
+                        payload: { selectedPlayer: null }
+                      });
+                      broadcastState();
+                    }, 0);
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+              >
+                Reset Draft
+              </button>
+            </div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-800">Draft Progress</h2>
               <div className="text-lg font-medium text-gray-600">
@@ -494,13 +538,15 @@ export default function AdminPanel() {
                                 drafted: true // Ensure drafted flag is set
                               };
                               
-                              // Update player states
-                              const updatedPlayers = players.map(p =>
-                                p.name === player.name ? { ...p, drafted: true } : p
-                              );
-                              setPlayers(updatedPlayers);
-                              setSelectedPlayer(playerWithPick);
-                              setDraftHistory(prev => [...prev, playerWithPick]);
+                              // Batch update player states
+                              startTransition(() => {
+                                const updatedPlayers = players.map(p =>
+                                  p.name === player.name ? { ...p, drafted: true } : p
+                                );
+                                setPlayers(updatedPlayers);
+                                setSelectedPlayer(playerWithPick);
+                                setDraftHistory(prev => [...prev, playerWithPick]);
+                              });
 
                               // First, broadcast the player selection
                               if (channelRef.current) {
@@ -526,33 +572,7 @@ export default function AdminPanel() {
               </table>
             </div>
 
-            {/* Reset Players Button */}
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => {
-                  // Reset all players to undrafted
-                  const resetPlayers = players.map(p => ({ ...p, drafted: false }));
-                  setPlayers(resetPlayers);
-                  setSelectedPlayer(null);
-                  setDraftHistory([]);
-                  setCurrentPickIndex(0);
-                  setTimerSeconds(defaultDuration);
-                  setIsTimerRunning(false);
-                  
-                  // Broadcast the reset
-                  if (channelRef.current) {
-                    channelRef.current.postMessage({
-                      type: 'PLAYER_DRAFTED',
-                      payload: { selectedPlayer: null }
-                    });
-                    broadcastState();
-                  }
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-              >
-                Reset Player Pool
-              </button>
-            </div>
+
           </section>
 
         </div>
