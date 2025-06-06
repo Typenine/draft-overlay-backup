@@ -53,14 +53,14 @@ export default function AdminPanel() {
     saveState({
       currentPickIndex,
       timerSeconds,
-      isTimerRunning,
-      draftOrder,
-      defaultDuration,
-      players,
       selectedPlayer,
-      draftHistory
+      draftOrder,
+      isTimerRunning,
+      draftHistory,
+      players,  // Restore players to maintain drafted status
+      defaultDuration  // Restore defaultDuration for timer consistency
     });
-  }, [currentPickIndex, timerSeconds, isTimerRunning, draftOrder, defaultDuration, players, selectedPlayer]);
+  }, [currentPickIndex, timerSeconds, selectedPlayer, draftOrder, isTimerRunning, draftHistory, players, defaultDuration]);
 
   // Initialize channel
   useEffect(() => {
