@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
 import { teams } from '../teams';
 import CountdownTimer from './CountdownTimer';
 import { defaultDraftOrder } from '../draftOrder';
@@ -67,16 +67,21 @@ export default function OverlayDisplay() {
         }
       } 
       else if (event.data.type === 'STATE_UPDATE') {
-        const { currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder: newDraftOrder, selectedPlayer: newSelectedPlayer } = event.data.payload;
-        setCurrentTeamId(currentTeamId);
-        setCurrentPickIndex(currentPickIndex);
-        setTimerSeconds(timerSeconds);
-        setIsTimerRunning(isTimerRunning);
-        if (newDraftOrder) {
-          setDraftOrder(newDraftOrder);
-        }
-        // For regular state updates, just update the state
-        // but don't show player announcements
+        const { currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder: newDraftOrder } = event.data.payload;
+        
+        // Batch all state updates in a single React cycle
+        React.startTransition(() => {
+          // Update draft order first since other state might depend on it
+          if (newDraftOrder) {
+            setDraftOrder(newDraftOrder);
+          }
+          
+          // Update all other state
+          setCurrentTeamId(currentTeamId);
+          setCurrentPickIndex(currentPickIndex);
+          setTimerSeconds(timerSeconds);
+          setIsTimerRunning(isTimerRunning);
+        });
       }
     };
 
@@ -160,7 +165,7 @@ export default function OverlayDisplay() {
             <h3 className="text-xl font-semibold text-gray-400 mb-6">Next Up</h3>
             <div className="flex justify-center gap-8">
               {nextTeams.map((team, index) => (
-                <div key={team.id} className="text-center opacity-80 hover:opacity-100 transition-opacity">
+                <div key={`next-team-${index}-${team.id}`} className="text-center opacity-80 hover:opacity-100 transition-opacity">
                   <img 
                     src={team.logo} 
                     alt={`${team.name} logo`}
