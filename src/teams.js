@@ -4,6 +4,7 @@ export const teams = [
     {
       id: 1,
       name: "Belltown Raptors",
+      abbrev: "BEL",
       owner: "Jason",
       logo: "https://i.postimg.cc/6pS5VRqQ/Belltown-Raptors-logo.png",
       colors: ["#753bbd", "#ba0c2f", "#8a8d8f"],
@@ -11,6 +12,7 @@ export const teams = [
     {
       id: 2,
       name: "Frank Gore = HOF",
+      abbrev: "FGH",
       owner: "Patrick",
       logo: "https://i.postimg.cc/zXK59BJd/Placeholder-Logos.png",
       colors: ["#4287f5", "#32a852", null],
@@ -18,6 +20,7 @@ export const teams = [
     {
       id: 3,
       name: "Mt. Lebanon Cake Eaters",
+      abbrev: "MTL",
       owner: "Michael M",
       logo: "https://i.postimg.cc/rmWmw914/Cake-Eaters-Logo-jpg.jpg",
       colors: ["#023351", "#DCAC24", null],
@@ -25,6 +28,7 @@ export const teams = [
     {
       id: 4,
       name: "Double Trouble",
+      abbrev: "DBT",
       owner: "Noah / Shane",
       logo: "https://i.postimg.cc/PqPy9Gd4/Double-Trouble-logo.png",
       colors: ["#120a11", "#351b4b", "#ca5517"],
@@ -32,6 +36,7 @@ export const teams = [
     {
       id: 5,
       name: "The Lone Ginger",
+      abbrev: "TLG",
       owner: "Ginger",
       logo: "https://i.postimg.cc/bNtyRdXY/Lone-Ginger-Logo.png",
       colors: ["#d56920", "#13110d", "#4b775b"],
@@ -39,6 +44,7 @@ export const teams = [
     {
       id: 6,
       name: "Minshew's Maniacs",
+      abbrev: "MIN",
       owner: "Matt S",
       logo: "https://i.postimg.cc/zvNpv0gH/Minshew-s-Maniacs-Logo.png",
       colors: ["#A60F2D", "#4D4D4D", null],
@@ -46,6 +52,7 @@ export const teams = [
     {
       id: 7,
       name: "Red Pandas",
+      abbrev: "RDP",
       owner: "Matt M",
       logo: "https://i.postimg.cc/28MmtWRL/Red-Pandas-Logo.png",
       colors: ["#c90a00", "#797574", "#38c4f6"],
@@ -53,6 +60,7 @@ export const teams = [
     {
       id: 8,
       name: "Elemental Heroes",
+      abbrev: "ELH",
       owner: "Joseph",
       logo: "https://i.postimg.cc/9z5BK1WQ/Elemental-Heroes-Logo.png",
       colors: ["#83e1a2", "#fd6e6e", "#7799c9"],
@@ -60,6 +68,7 @@ export const teams = [
     {
       id: 9,
       name: "bop pop",
+      abbrev: "BOP",
       owner: "Jack",
       logo: "https://i.postimg.cc/4xhnSwrc/bop-pop-logo.png",
       colors: ["#fedb35", "#f88618", null],
@@ -67,6 +76,7 @@ export const teams = [
     {
       id: 10,
       name: "BeerNeverBrokeMyHeart",
+      abbrev: "BNB",
       owner: "Michael B",
       logo: "https://i.postimg.cc/B634ZfMT/Beer-Never-Broke-My-Heart-Logo.png",
       colors: ["#0E1A27", "#F4E3C3", "#B53329"],
@@ -74,6 +84,7 @@ export const teams = [
     {
       id: 11,
       name: "Bimg Bamg Boomg",
+      abbrev: "BBB",
       owner: "Alex",
       logo: "https://i.postimg.cc/L6PTMdg4/Bimg-Bamg-Boomg-Logo.png",
       colors: ["#712D7C", "#9BC46D", "#9E9E9E"],
@@ -81,9 +92,9 @@ export const teams = [
     {
       id: 12,
       name: "Detroit Dawgs",
+      abbrev: "DET",
       owner: "Conor",
       logo: "https://i.postimg.cc/X76Vv3hr/Detroit-Dawgs-Logo.png",
       colors: ["#5a341f", "#da2127", "#f3bd37"],
     },
   ];
-  
