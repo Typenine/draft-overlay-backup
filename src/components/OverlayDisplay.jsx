@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, startTransition, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { teams } from '../teams';
 import CountdownTimer from './CountdownTimer';
 import { defaultDraftOrder } from '../draftOrder';
@@ -93,7 +93,7 @@ export default function OverlayDisplay() {
       channelRef.current.removeEventListener('message', handleMessage);
       channelRef.current.close();
     };
-  }, [findTeamById]);
+  }, [findTeamById, draftOrder]);
 
   // Find current team
   const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];
