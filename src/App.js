@@ -40,6 +40,7 @@ function App() {
                 </svg>
                 Component Playground
               </Link>
+
             </div>
           </div>
         } />

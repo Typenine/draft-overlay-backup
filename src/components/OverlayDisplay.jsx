@@ -1,8 +1,13 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { teams } from '../teams';
-import CountdownTimer from './CountdownTimer';
+import styles from './OverlayDisplay.module.css';
+import ClockBox from './OverlayDisplay/ClockBox/ClockBox';
+import InfoBar from './OverlayDisplay/InfoBar/InfoBar';
+import Ticker from './OverlayDisplay/Ticker/Ticker';
 import { defaultDraftOrder } from '../draftOrder';
 import { loadState } from '../utils/storage';
+
+const findTeamById = (id) => teams.find(team => team.id === id);
 
 export default function OverlayDisplay() {
   // Initialize state from localStorage or defaults
@@ -32,12 +37,6 @@ export default function OverlayDisplay() {
       return () => clearTimeout(timer);
     }
   }, [recentDraftedPlayer, lastPickTimestamp]);
-
-  // Get next two teams
-  const nextTeams = [
-    teams.find(team => team.id === draftOrder[currentPickIndex + 1]),
-    teams.find(team => team.id === draftOrder[currentPickIndex + 2])
-  ].filter(Boolean); // Remove undefined values
 
   // Memoize team finding function to avoid stale closures
   const findTeamById = useCallback((id) => teams.find(t => t.id === id), []);
@@ -99,91 +98,34 @@ export default function OverlayDisplay() {
   const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];
   const [primaryColor, secondaryColor] = currentTeam.colors;
 
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get next teams
+  const nextTeams = [
+    findTeamById(draftOrder[currentPickIndex + 1]),
+    findTeamById(draftOrder[currentPickIndex + 2])
+  ].filter(Boolean);
+
   return (
-    <div className="fixed inset-0 overflow-hidden flex items-center justify-center" 
-         style={{ 
-           background: `linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95))`
-         }}>
-      <div className="text-center p-6 rounded-xl bg-black bg-opacity-50 backdrop-blur-sm shadow-2xl border border-gray-800 max-h-screen overflow-hidden">
-        {/* Draft Progress */}
-        <div className="mb-8 text-gray-300">
-          <div className="text-2xl font-bold">
-            Round {Math.floor(currentPickIndex / 12) + 1}
-            <span className="mx-2">•</span>
-            Pick {(currentPickIndex % 12) + 1}
-          </div>
-        </div>
-
-        {/* Current Team */}
-        <img 
-          src={currentTeam.logo} 
-          alt={`${currentTeam.name} logo`}
-          className="w-40 h-40 mx-auto mb-4 drop-shadow-2xl"
+    <div className={styles.overlay}>
+      <div className={styles.topRow}>
+        <ClockBox
+          teamAbbrev={currentTeam?.name?.substring(0, 3).toUpperCase() || 'DET'}
+          teamLogo={currentTeam?.logo || null}
+          teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']}
+          roundNumber={Math.floor(currentPickIndex / 32) + 1}
+          pickNumber={currentPickIndex + 1}
+          timeRemaining={formatTimeRemaining(timerSeconds)}
+          nextTeams={nextTeams}
         />
-        <h1 
-          className="text-4xl font-bold mb-2"
-          style={{ color: primaryColor }}
-        >
-          {currentTeam.name}
-        </h1>
-        <h2 
-          className="text-xl mb-6"
-          style={{ color: secondaryColor }}
-        >
-          {currentTeam.owner}
-        </h2>
-        <CountdownTimer 
-          seconds={timerSeconds}
-          isRunning={isTimerRunning}
-        />
-
-        {/* Draft Announcement */}
-        {recentDraftedPlayer && (
-          <div 
-            className="mt-6 pt-6 border-t border-gray-700 transition-all duration-1000 opacity-100"
-            style={{
-              animation: 'fadeInOut 10s ease-in-out'
-            }}
-          >
-            <div 
-              className="text-2xl font-bold" 
-              style={{ color: recentDraftedPlayer.team.colors[0] }}
-            >
-              {recentDraftedPlayer.team.name} selects:
-            </div>
-            <div className="mt-4 text-3xl font-bold text-white">
-              {recentDraftedPlayer.player.name}
-            </div>
-            <div className="mt-2 text-xl text-gray-300">
-              {recentDraftedPlayer.player.position} - {recentDraftedPlayer.player.nflTeam}
-            </div>
-          </div>
-        )}
-
-        {/* Next Teams */}
-        {nextTeams.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-gray-700">
-            <h3 className="text-xl font-semibold text-gray-400 mb-6">Next Up</h3>
-            <div className="flex justify-center gap-8">
-              {nextTeams.map((team, index) => (
-                <div key={`next-team-${index}-${team.id}`} className="text-center opacity-80 hover:opacity-100 transition-opacity">
-                  <img 
-                    src={team.logo} 
-                    alt={`${team.name} logo`}
-                    className="w-16 h-16 mx-auto mb-2"
-                  />
-                  <div className="text-sm font-medium" style={{ color: team.colors[0] }}>
-                    {team.name}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {team.owner}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <InfoBar />
       </div>
+      <Ticker />
     </div>
   );
 }

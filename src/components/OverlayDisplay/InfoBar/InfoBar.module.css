@@ -1,0 +1,9 @@
+.infoBar {
+  width: 1452px;
+  height: 145px;
+  background-color: rgba(51, 51, 51, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
