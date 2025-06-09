@@ -118,8 +118,8 @@ export default function OverlayDisplay() {
           teamAbbrev={currentTeam?.name?.substring(0, 3).toUpperCase() || 'DET'}
           teamLogo={currentTeam?.logo || null}
           teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']}
-          roundNumber={Math.floor(currentPickIndex / 32) + 1}
-          pickNumber={currentPickIndex + 1}
+          roundNumber={Math.floor(currentPickIndex / 12) + 1}
+          pickNumber={(currentPickIndex % 12) + 1}
           timeRemaining={formatTimeRemaining(timerSeconds)}
           nextTeams={nextTeams}
         />
