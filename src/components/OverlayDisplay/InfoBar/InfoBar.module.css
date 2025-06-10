@@ -1,9 +1,113 @@
 .infoBar {
   width: 1452px;
   height: 145px;
-  background-color: rgba(51, 51, 51, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
+  color: white;
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+  background: var(--team-primary-color);
+  border-left: 6px solid var(--team-secondary-color);
+  padding: 8px 24px 12px;
+  position: relative;
+}
+
+.infoBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  background: var(--team-secondary-color);
+}
+
+.viewTitle {
+  font-size: 18px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  padding: 0 24px;
+}
+
+/* Best Available View Styles */
+.bestAvailable {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.playerList {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  gap: 8px 24px;
+  width: 800px;
+  padding-left: 24px;
+  margin-right: auto;
+}
+
+.playerCard {
+  display: flex;
+  height: 40px;
+  padding: 10px 0;
+  position: relative;
+  min-width: 0;
+  width: auto;
+  gap: 12px;
   align-items: center;
+}
+
+.playerCard:nth-child(-n+2)::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.rank {
+  font-size: 16px;
+  font-weight: bold;
+  opacity: 0.8;
+  width: 30px;
+  padding-top: 8px;
+}
+
+.playerDetails {
+  font-size: 16px;
+  opacity: 0.8;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.playerName {
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+  margin-bottom: 2px;
+}
+
+.playerName {
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playerInfo {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
+  flex: 1;
+  min-width: 0;
 }

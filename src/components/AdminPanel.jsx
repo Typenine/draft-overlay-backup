@@ -41,6 +41,7 @@ export default function AdminPanel() {
   // UI state
   const [showEditor, setShowEditor] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showBestAvailable, setShowBestAvailable] = useState(true);
 
   // Refs
   const channelRef = useRef(null);
@@ -215,37 +216,24 @@ export default function AdminPanel() {
           {/* Draft Progress */}
           <section className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={() => {
-                  // Batch reset state updates
-                  startTransition(() => {
-                    const resetPlayers = players.map(p => ({ ...p, drafted: false }));
-                    setPlayers(resetPlayers);
-                    setSelectedPlayer(null);
-                    setDraftHistory([]);
-                    setCurrentPickIndex(0);
-                    setTimerSeconds(defaultDuration);
-                    setIsTimerRunning(false);
-                  });
-                  
-                  // Broadcast after state updates
-                  if (channelRef.current) {
-                    setTimeout(() => {
+              <div className="flex items-center">
+                <h2 className="text-xl font-semibold text-gray-800">Draft Progress</h2>
+                <button
+                  onClick={() => {
+                    const newShowBestAvailable = !showBestAvailable;
+                    setShowBestAvailable(newShowBestAvailable);
+                    if (channelRef.current) {
                       channelRef.current.postMessage({
-                        type: 'PLAYER_DRAFTED',
-                        payload: { selectedPlayer: null }
+                        type: 'TOGGLE_VIEW',
+                        payload: { showBestAvailable: newShowBestAvailable }
                       });
-                      broadcastState();
-                    }, 0);
-                  }
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-              >
-                Reset Draft
-              </button>
-            </div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-800">Draft Progress</h2>
+                    }
+                  }}
+                  className="ml-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                >
+                  {showBestAvailable ? 'Show Draft Picks' : 'Show Best Available'}
+                </button>
+              </div>
               <div className="text-lg font-medium text-gray-600">
                 Pick {currentPickIndex + 1} of {draftOrder.length}
                 <span className="mx-2">|</span>
@@ -258,25 +246,47 @@ export default function AdminPanel() {
                 onClick={handlePreviousPick}
                 disabled={currentPickIndex === 0}
                 className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={currentPickIndex === 0 ? "At the first pick" : "Go to previous pick"}
               >
                 Previous Pick
               </button>
               <button
-                onClick={handleUndoPick}
-                disabled={!selectedPlayer || selectedPlayer.pickIndex !== currentPickIndex - 1}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={!selectedPlayer || selectedPlayer.pickIndex !== currentPickIndex - 1 ? "Can only undo the last pick" : "Undo last pick"}
-              >
-                Undo Pick
-              </button>
-              <button
                 onClick={handleNextPick}
-                disabled={currentPickIndex >= draftOrder.length - 1}
+                disabled={currentPickIndex === draftOrder.length - 1}
                 className="px-4 py-2 text-sm font-medium text-white bg-gray-600 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                title={currentPickIndex >= draftOrder.length - 1 ? "At the last pick" : "Go to next pick"}
               >
                 Next Pick
+              </button>
+              <button
+                onClick={handleUndoPick}
+                disabled={draftHistory.length === 0}
+                className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Undo Last Pick
+              </button>
+              <button
+                onClick={() => {
+                  // Reset all draft state
+                  setDraftHistory([]);
+                  setCurrentPickIndex(0);
+                  setTimerSeconds(defaultDuration);
+                  setIsTimerRunning(false);
+                  
+                  // Reset all players to undrafted
+                  const resetPlayers = players.map(p => ({ ...p, drafted: false }));
+                  setPlayers(resetPlayers);
+                  setSelectedPlayer(null);
+                  
+                  // Broadcast reset
+                  if (channelRef.current) {
+                    channelRef.current.postMessage({
+                      type: 'DRAFT_RESET'
+                    });
+                    broadcastState();
+                  }
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Reset Draft
               </button>
             </div>
           </section>

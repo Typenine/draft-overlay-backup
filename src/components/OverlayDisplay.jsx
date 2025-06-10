@@ -123,7 +123,7 @@ export default function OverlayDisplay() {
           timeRemaining={formatTimeRemaining(timerSeconds)}
           nextTeams={nextTeams}
         />
-        <InfoBar />
+        <InfoBar teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']} />
       </div>
       <Ticker />
     </div>
