@@ -43,6 +43,7 @@ export default function AdminPanel() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showBestAvailable, setShowBestAvailable] = useState(true);
 
+
   // Refs
   const channelRef = useRef(null);
 
@@ -85,13 +86,14 @@ export default function AdminPanel() {
             isTimerRunning,
             draftOrder,
             selectedPlayer,
+            players, // Include current player list
             // Only include draftingTeam if there's a selected player
             ...(selectedPlayer && { draftingTeam: teams.find(t => t.id === currentTeamId) })
           }
         });
       }
     }, 0);
-  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer, teams]);
+  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer, teams, players]);
 
   // Broadcast state whenever it changes
   useEffect(() => {
@@ -120,33 +122,40 @@ export default function AdminPanel() {
     if (currentPickIndex > 0) {
       const lastDraftedPlayer = draftHistory[draftHistory.length - 1];
       if (lastDraftedPlayer) {
-        const updatedPlayers = players.map(p =>
-          p.name === lastDraftedPlayer.name ? { ...p, drafted: false } : p
-        );
-        setPlayers(updatedPlayers);
-        
-        // Get the previous pick before updating history
-        const newHistory = draftHistory.slice(0, -1);
-        const previousPick = newHistory[newHistory.length - 1] || null;
-        
         // Update all related state
-        setDraftHistory(newHistory);
-        setSelectedPlayer(previousPick);
-        setCurrentPickIndex(prev => prev - 1);
-        setTimerSeconds(defaultDuration);
-        setIsTimerRunning(false);
+        startTransition(() => {
+          // Mark the player as undrafted
+          setPlayers(prev => prev.map(p => 
+            p.name === lastDraftedPlayer.name ? { ...p, drafted: false } : p
+          ));
+          
+          // Get the previous pick before updating history
+          const newHistory = draftHistory.slice(0, -1);
+          const previousPick = newHistory[newHistory.length - 1] || null;
+          
+          setDraftHistory(newHistory);
+          setSelectedPlayer(previousPick);
+          setCurrentPickIndex(prev => prev - 1);
+          setTimerSeconds(defaultDuration);
+          setIsTimerRunning(false);
+        });
         
         // Broadcast updates
         if (channelRef.current) {
+          // First send the undo pick message
           channelRef.current.postMessage({
-            type: 'PLAYER_DRAFTED',
-            payload: { selectedPlayer: previousPick }
+            type: 'UNDO_PICK',
+            payload: { player: lastDraftedPlayer }
           });
-          broadcastState();
+          
+          // Then broadcast state update
+          setTimeout(() => {
+            broadcastState();
+          }, 0);
         }
       }
     }
-  }, [currentPickIndex, players, defaultDuration, broadcastState, draftHistory]);
+  }, [currentPickIndex, draftHistory, defaultDuration, broadcastState]);
 
   // Timer effect with auto-advance
   useEffect(() => {

@@ -1,13 +1,13 @@
 .infoBar {
   width: 1452px;
-  height: 145px;
-  display: flex;
+  height: 185px;
+  bottom: 0;
+  transform: translateY(-40px);
   color: white;
   font-family: 'Arial', sans-serif;
   overflow: hidden;
   background: var(--team-primary-color);
   border-left: 6px solid var(--team-secondary-color);
-  padding: 8px 24px 12px;
   position: relative;
 }
 
@@ -30,12 +30,19 @@
   padding: 0 24px;
 }
 
-/* Best Available View Styles */
-.bestAvailable {
+/* Common View Styles */
+.bestAvailable,
+.draft2024 {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px 24px 12px;
 }
 
 .playerList {
@@ -82,6 +89,7 @@
   opacity: 0.8;
   line-height: 20px;
   white-space: nowrap;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .playerName {

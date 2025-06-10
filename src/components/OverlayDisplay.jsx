@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { teams } from '../teams';
 import styles from './OverlayDisplay.module.css';
 import ClockBox from './OverlayDisplay/ClockBox/ClockBox';
-import InfoBar from './OverlayDisplay/InfoBar/InfoBar';
+import { InfoBar } from './OverlayDisplay/InfoBar/InfoBar';
 import Ticker from './OverlayDisplay/Ticker/Ticker';
 import { defaultDraftOrder } from '../draftOrder';
 import { loadState } from '../utils/storage';
@@ -123,9 +123,14 @@ export default function OverlayDisplay() {
           timeRemaining={formatTimeRemaining(timerSeconds)}
           nextTeams={nextTeams}
         />
-        <InfoBar teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']} />
+        <InfoBar 
+          teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']} 
+          currentTeamId={currentTeamId}
+        />
       </div>
+      {/* Ticker component temporarily hidden
       <Ticker />
+      */}
     </div>
   );
 }

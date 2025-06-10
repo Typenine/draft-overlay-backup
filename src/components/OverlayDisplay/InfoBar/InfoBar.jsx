@@ -1,111 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './InfoBar.module.css';
 import { draft2024 } from '../../../data/2024DraftResults';
 import { draftPlayers } from '../../../draftPlayers';
 import { teams } from '../../../teams';
 
-class InfoBarErrorBoundary extends React.Component {
-  state = { hasError: false };
-  
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-  
-  render() {
-    if (this.state.hasError) {
-      return <div className={styles.infoBar}>Error loading draft info</div>;
-    }
-    return this.props.children;
-  }
-}
-
-const getNFLTeamAbbreviation = (teamName) => {
-  const abbreviations = {
-    "Tennessee Titans": "TEN",
-    "Jacksonville Jaguars": "JAX",
-    "Las Vegas Raiders": "LV",
-    "Carolina Panthers": "CAR",
-    "Chicago Bears": "CHI",
-    "Indianapolis Colts": "IND",
-    "Tampa Bay Buccaneers": "TB",
-    "Los Angeles Chargers": "LAC",
-    "Green Bay Packers": "GB",
-    "New York Giants": "NYG",
-    "Houston Texans": "HOU",
-    "Cleveland Browns": "CLE",
-    "New England Patriots": "NE",
-    "New Orleans Saints": "NO",
-    "New York Jets": "NYJ",
-    "Los Angeles Rams": "LAR",
-    "Pittsburgh Steelers": "PIT",
-    "Dallas Cowboys": "DAL",
-    "Buffalo Bills": "BUF",
-    "Detroit Lions": "DET",
-    "Denver Broncos": "DEN",
-    "Minnesota Vikings": "MIN",
-    "Washington Commanders": "WAS",
-    "Kansas City Chiefs": "KC",
-    "Seattle Seahawks": "SEA",
-    "Atlanta Falcons": "ATL",
-    "Arizona Cardinals": "ARI",
-    "Miami Dolphins": "MIA",
-    "Cincinnati Bengals": "CIN",
-    "San Francisco 49ers": "SF",
-    "Philadelphia Eagles": "PHI",
-    "Baltimore Ravens": "BAL"
-  };
-  return abbreviations[teamName] || teamName;
-};
-
 const BestAvailableView = () => {
   // Use the actual players array as source of truth
-  const [localPlayers, setLocalPlayers] = useState(draftPlayers);
+  const [localPlayers, setLocalPlayers] = React.useState(draftPlayers);
+  const updateTimeoutRef = useRef(null);
 
-  useEffect(() => {
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Debounced update function
+  const debouncedUpdate = (newPlayers) => {
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    updateTimeoutRef.current = setTimeout(() => {
+      setLocalPlayers(newPlayers);
+    }, 100); // 100ms debounce
+  };
+
+  React.useEffect(() => {
     const channel = new BroadcastChannel('draft-overlay');
+    let isMounted = true;
     
     const handleMessage = (event) => {
-      try {
-        if (!event.data || !event.data.type) {
-          console.error('Received malformed message:', event);
-          return;
+      const { type, payload } = event.data;
+      
+      // Only process messages if component is mounted and visible
+      if (!isMounted) return;
+      
+      if (type === 'PLAYER_DRAFTED') {
+        const { selectedPlayer } = payload;
+        if (selectedPlayer) {
+          debouncedUpdate(prev => prev.map(p => 
+            p.name === selectedPlayer.name ? { ...p, drafted: true } : p
+          ));
         }
-
-        switch (event.data.type) {
-          case 'STATE_UPDATE':
-            // If we get a state update with players, sync with admin panel
-            const { players: updatedPlayers } = event.data.payload;
-            if (updatedPlayers) {
-              console.log('Received player update:', updatedPlayers.filter(p => !p.drafted).length, 'available');
-              setLocalPlayers(updatedPlayers);
-            }
-            break;
-
-          case 'PLAYER_DRAFTED':
-            // For individual draft updates, mark that player as drafted
-            const { selectedPlayer } = event.data.payload;
-            if (selectedPlayer) {
-              setLocalPlayers(prev => prev.map(p => 
-                p.name === selectedPlayer.name ? { ...p, drafted: true } : p
-              ));
-            }
-            break;
-
-          case 'DRAFT_RESET':
-            // Reset to initial state
-            setLocalPlayers(draftPlayers);
-            break;
-
-          default:
-            console.log('Unhandled message type:', event.data.type);
+      } else if (type === 'UNDO_PICK') {
+        const { player } = payload;
+        if (player) {
+          debouncedUpdate(prev => prev.map(p => 
+            p.name === player.name ? { ...p, drafted: false } : p
+          ));
         }
-      } catch (error) {
-        console.error('Error handling message:', error);
+      } else if (type === 'STATE_UPDATE' && payload?.players) {
+        debouncedUpdate(payload.players);
+      } else if (type === 'DRAFT_RESET') {
+        debouncedUpdate(draftPlayers);
+      } else if (type === 'PLAYERPOOL_RESET' && payload?.players) {
+        debouncedUpdate(payload.players);
       }
     };
 
     channel.addEventListener('message', handleMessage);
+    channel.postMessage({ type: 'REQUEST_STATE' });
+
     return () => {
+      isMounted = false;
       channel.removeEventListener('message', handleMessage);
       channel.close();
     };
@@ -114,8 +75,12 @@ const BestAvailableView = () => {
   const availablePlayers = localPlayers
     .filter(player => !player.drafted && player.position !== "DEF")
     .sort((a, b) => a.overallRank - b.overallRank);
+    
+  console.log('[BestAvailable] Filtered players:', 
+    'Total:', localPlayers.length,
+    'Available:', availablePlayers.length);
 
-  const visiblePlayers = availablePlayers.slice(0, 4);
+  const visiblePlayers = availablePlayers.slice(0, 6);
 
   return (
     <div className={styles.bestAvailable}>
@@ -127,7 +92,7 @@ const BestAvailableView = () => {
             <div className={styles.playerInfo}>
               <div className={styles.playerName}>{player.name}</div>
               <div className={styles.playerDetails}>
-                {player.position} - {player.college} - {getNFLTeamAbbreviation(player.nflTeam)}
+                {player.position} - {player.college} - {player.nflTeam || '-'}
               </div>
             </div>
           </div>
@@ -137,115 +102,186 @@ const BestAvailableView = () => {
   );
 };
 
-const Draft2024View = () => {
-  const [currentTeamId, setCurrentTeamId] = useState(1);
+class InfoBarErrorBoundary extends React.Component {
+  state = { hasError: false };
+  
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
 
+  componentDidCatch(error, errorInfo) {
+    console.error('InfoBar Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className={styles.errorContainer}>
+          <div className={styles.errorMessage}>
+            Something went wrong displaying the InfoBar.
+            Please refresh the page.
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+const getNFLTeamAbbreviation = (teamName) => {
+  const abbreviations = {
+    'Arizona Cardinals': 'ARI',
+    'Atlanta Falcons': 'ATL',
+    'Baltimore Ravens': 'BAL',
+    'Buffalo Bills': 'BUF',
+    'Carolina Panthers': 'CAR',
+    'Chicago Bears': 'CHI',
+    'Cincinnati Bengals': 'CIN',
+    'Cleveland Browns': 'CLE',
+    'Dallas Cowboys': 'DAL',
+    'Denver Broncos': 'DEN',
+    'Detroit Lions': 'DET',
+    'Green Bay Packers': 'GB',
+    'Houston Texans': 'HOU',
+    'Indianapolis Colts': 'IND',
+    'Jacksonville Jaguars': 'JAX',
+    'Kansas City Chiefs': 'KC',
+    'Las Vegas Raiders': 'LV',
+    'Los Angeles Chargers': 'LAC',
+    'Los Angeles Rams': 'LAR',
+    'Miami Dolphins': 'MIA',
+    'Minnesota Vikings': 'MIN',
+    'New England Patriots': 'NE',
+    'New Orleans Saints': 'NO',
+    'New York Giants': 'NYG',
+    'New York Jets': 'NYJ',
+    'Philadelphia Eagles': 'PHI',
+    'Pittsburgh Steelers': 'PIT',
+    'San Francisco 49ers': 'SF',
+    'Seattle Seahawks': 'SEA',
+    'Tampa Bay Buccaneers': 'TB',
+    'Tennessee Titans': 'TEN',
+    'Washington Commanders': 'WAS'
+  };
+  return abbreviations[teamName] || teamName;
+};
+
+const Draft2024View = ({ parentIsTransitioning, initialTeamId }) => {
+  const [currentTeamId, setCurrentTeamId] = useState(initialTeamId);
+  const [teamPicks, setTeamPicks] = useState([]);
+  const channelRef = useRef(null);
+
+  // Single source of truth for BroadcastChannel
   useEffect(() => {
-    const channel = new BroadcastChannel('draft-overlay');
+    channelRef.current = new BroadcastChannel('draft-overlay');
     
     const handleMessage = (event) => {
-      try {
-        if (!event.data || !event.data.type) {
-          console.error('Received malformed message:', event);
-          return;
-        }
-
-        switch (event.data.type) {
-          case 'STATE_UPDATE':
-            const { currentTeamId: newTeamId } = event.data.payload;
-            if (newTeamId) {
-              setCurrentTeamId(newTeamId);
-            }
-            break;
-
-          case 'DRAFT_RESET':
-            setCurrentTeamId(1);
-            break;
-
-          default:
-            // No need to handle other message types
-            break;
-        }
-      } catch (error) {
-        console.error('Error handling message:', error);
+      const { type, payload } = event.data || {};
+      if (type === 'STATE_UPDATE' && payload?.currentTeamId) {
+        setCurrentTeamId(payload.currentTeamId);
+      } else if (type === 'DRAFT_RESET') {
+        setCurrentTeamId(1);
       }
     };
 
-    channel.addEventListener('message', handleMessage);
+    channelRef.current.addEventListener('message', handleMessage);
+    channelRef.current.postMessage({ type: 'REQUEST_STATE' });
+
     return () => {
-      channel.removeEventListener('message', handleMessage);
-      channel.close();
+      channelRef.current?.removeEventListener('message', handleMessage);
+      channelRef.current?.close();
     };
   }, []);
 
-  // Get the current team name from the teams array
-  const currentTeamObj = teams.find(t => t.id === currentTeamId);
-  const currentTeam = currentTeamObj?.name || 'Detroit Dawgs';
+  // Update team picks when currentTeamId changes
+  useEffect(() => {
+    if (!currentTeamId) return;
+    
+    const newTeamPicks = draft2024
+      .filter(pick => pick.teamId === currentTeamId)
+      .sort((a, b) => {
+        if (a.round !== b.round) return a.round - b.round;
+        return a.pick - b.pick;
+      });
+    
+    setTeamPicks(newTeamPicks);
+  }, [currentTeamId]);
 
-  // Debug logging
-  console.log('Current Team ID:', currentTeamId);
-  console.log('Current Team Object:', currentTeamObj);
-  console.log('Current Team Name:', currentTeam);
-  console.log('Available Teams in draft2024:', [...new Set(draft2024.map(p => p.team))]);
-
-  // Create a mapping between team names in teams.js and draft2024.js
-  const teamNameMap = {
-    "Belltown Raptors": "Belltown Raptors",
-    "Frank Gore = HOF": "Frank Gore = HOF",
-    "Mt. Lebanon Cake Eaters": "Mt. Lebanon Cake Eaters",
-    "Double Trouble": "Double Trouble",
-    "The Lone Ginger": "The Lone Ginger",
-    "Minshew's Maniacs": "Minshew's Maniacs",
-    "Red Pandas": "Red Pandas",
-    "Elemental Heroes": "Elemental Heroes",
-    "bop pop": "bop pop",
-    "BeerNeverBrokeMyHeart": "BeerNeverBrokeMyHeart",
-    "Bimg Bamg Boomg": "Bimg Bamg Boomg",
-    "Detroit Dawgs": "Detroit Dawgs"
-  };
-
-  // Filter picks for the current team and sort by round/pick
-  const teamPicks = draft2024
-    .filter(pick => pick.team === teamNameMap[currentTeam])
-    .sort((a, b) => a.round - b.round || a.pick - b.pick);
-  
-  console.log('Found picks for team:', teamPicks);
-  
-  // Show first 4 picks or error if none found
-  const visiblePicks = teamPicks.slice(0, 4);
+  const visiblePicks = teamPicks.slice(0, 6);
 
   if (teamPicks.length === 0) {
     return (
-      <div className={styles.bestAvailable}>
+      <div className={styles.draft2024}>
         <div className={styles.viewTitle}>2024 Draft Picks</div>
-        <div className={styles.playerList}>
-          <div className={styles.playerCard}>
-            <div className={styles.playerInfo}>
-              <div className={styles.playerName}>No picks found</div>
-              <div className={styles.playerDetails}>This team has no draft picks</div>
-            </div>
-          </div>
-        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="no-picks"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ 
+              opacity: 1,
+              y: 0,
+              transition: {
+                y: { type: "spring", stiffness: 70, damping: 15 },
+                opacity: { duration: 0.7, ease: [0.4, 0, 0.2, 1] }
+              }
+            }}
+            exit={{ 
+              opacity: 0,
+              y: -40,
+              transition: {
+                y: { duration: 0.6, ease: [0.4, 0, 0.6, 1] },
+                opacity: { duration: 0.5, ease: "linear" }
+              }
+            }}
+          >
+            No picks yet
+          </motion.div>
+        </AnimatePresence>
       </div>
     );
   }
 
   return (
-    <div className={styles.bestAvailable}>
+    <div className={styles.draft2024}>
       <div className={styles.viewTitle}>2024 Draft Picks</div>
-      <div className={styles.playerList}>
-        {visiblePicks.map((pick, index) => (
-          <div key={`${pick.round}-${pick.pick}`} className={styles.playerCard}>
-            <div className={styles.rank}>{index + 1}.</div>
-            <div className={styles.playerInfo}>
-              <div className={styles.playerName}>{pick.player}</div>
-              <div className={styles.playerDetails}>
-                {pick.position} - {pick.nflTeam} - Round {pick.round}, Pick {pick.pick}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="picks"
+          initial={{ 
+            opacity: 0,
+            y: 40 
+          }}
+          animate={{ 
+            opacity: 1,
+            y: 0,
+            transition: {
+              y: { type: "spring", stiffness: 70, damping: 15 },
+              opacity: { duration: 0.7, ease: [0.4, 0, 0.2, 1] }
+            }
+          }}
+          exit={{ 
+            opacity: 0,
+            y: -40,
+            transition: {
+              y: { duration: 0.6, ease: [0.4, 0, 0.6, 1] },
+              opacity: { duration: 0.5, ease: "linear" }
+            }
+          }}
+        >
+          <div className={styles.playerList}>
+            {visiblePicks.map((pick, i) => (
+              <div key={`${pick.round}-${pick.pick}`} className={styles.playerCard}>
+                <div className={styles.rank}>{i + 1}.</div>
+                <div className={styles.playerInfo}>
+                  <div className={styles.playerName}>{pick.player}</div>
+                  <div className={styles.playerDetails}>
+                    {pick.position} - {pick.nflTeam || '-'} - Round {pick.round}, Pick {pick.pick}
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };
@@ -263,30 +299,75 @@ const validateData = () => {
   }
 };
 
-const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'] }) => {
-  const [showBestAvailable, setShowBestAvailable] = useState(true);
+// Shared animation configuration
+const animationConfig = {
+  initial: { opacity: 0, y: 40 },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      y: { type: "spring", stiffness: 70, damping: 15 },
+      opacity: { duration: 0.3 } // Faster opacity transition
+    }
+  },
+  exit: { 
+    opacity: 0,
+    y: -40,
+    transition: {
+      y: { duration: 0.3 }, // Match opacity duration
+      opacity: { duration: 0.3 }
+    }
+  }
+};
 
+const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'], currentTeamId }) => {
+  const [currentView, setCurrentView] = useState('bestAvailable');
+  const channelRef = useRef(null);
+  
+  // Ref to track if we're transitioning
+  const isTransitioning = useRef(false);
+  
+  // Simple 10-second view alternation
   useEffect(() => {
-    const channel = new BroadcastChannel('draft-overlay');
+    const interval = setInterval(() => {
+      if (!isTransitioning.current) {
+        setCurrentView(current => 
+          current === 'bestAvailable' ? 'draftPicks' : 'bestAvailable'
+        );
+      }
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle broadcast messages
+  useEffect(() => {
+    channelRef.current = new BroadcastChannel('draft-overlay');
     
     const handleMessage = (event) => {
-      try {
-        if (!event.data || !event.data.type) return;
-
-        if (event.data.type === 'TOGGLE_VIEW') {
-          setShowBestAvailable(event.data.payload.showBestAvailable);
-        }
-      } catch (error) {
-        console.error('Error handling message:', error);
+      const { type, payload } = event.data || {};
+      if (type === 'TOGGLE_VIEW') {
+        setCurrentView(payload.view);
       }
     };
 
-    channel.addEventListener('message', handleMessage);
+    channelRef.current.addEventListener('message', handleMessage);
     return () => {
-      channel.removeEventListener('message', handleMessage);
-      channel.close();
+      channelRef.current?.removeEventListener('message', handleMessage);
+      channelRef.current?.close();
     };
   }, []);
+
+
+
+
+  const onAnimationStart = () => {
+    isTransitioning.current = true;
+  };
+
+  const onAnimationComplete = () => {
+    isTransitioning.current = false;
+  };
 
   return (
     <div 
@@ -296,9 +377,29 @@ const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'] }) => {
         '--team-secondary-color': teamColors[1]
       }}
     >
-      {showBestAvailable ? <BestAvailableView /> : <Draft2024View />}
+      <AnimatePresence mode="wait" initial={false}>
+        {currentView === 'bestAvailable' ? (
+          <motion.div
+            key="best-available"
+            {...animationConfig}
+            onAnimationStart={onAnimationStart}
+            onAnimationComplete={onAnimationComplete}
+          >
+            <BestAvailableView />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="draft-picks"
+            {...animationConfig}
+            onAnimationStart={onAnimationStart}
+            onAnimationComplete={onAnimationComplete}
+          >
+            <Draft2024View initialTeamId={currentTeamId} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default InfoBar;
+export { InfoBar, InfoBarErrorBoundary };

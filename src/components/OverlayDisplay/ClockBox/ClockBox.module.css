@@ -1,6 +1,8 @@
 .clockBox {
   width: 423px;
-  height: 145px;
+  height: 185px;
+  bottom: 0;
+  transform: translateY(-40px);
   display: flex;
   color: white;
   position: relative;
@@ -134,7 +136,7 @@
 
 .logoPlaceholder {
   width: 110px;
-  height: 85px;
+  height: 120px;
   background-color: #333;
   border-radius: 8px;
   overflow: hidden;
