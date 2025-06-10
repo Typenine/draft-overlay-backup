@@ -4,6 +4,7 @@ import styles from './OverlayDisplay.module.css';
 import ClockBox from './OverlayDisplay/ClockBox/ClockBox';
 import { InfoBar } from './OverlayDisplay/InfoBar/InfoBar';
 import Ticker from './OverlayDisplay/Ticker/Ticker';
+import DraftAnimation from './OverlayDisplay/DraftAnimation/DraftAnimation';
 import { defaultDraftOrder } from '../draftOrder';
 import { loadState } from '../utils/storage';
 
@@ -128,6 +129,13 @@ export default function OverlayDisplay() {
           currentTeamId={currentTeamId}
         />
       </div>
+      {recentDraftedPlayer && (
+        <DraftAnimation
+          player={recentDraftedPlayer.player}
+          team={recentDraftedPlayer.team}
+          onComplete={() => setRecentDraftedPlayer(null)}
+        />
+      )}
       {/* Ticker component temporarily hidden
       <Ticker />
       */}

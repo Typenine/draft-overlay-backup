@@ -1,0 +1,130 @@
+import React, { useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import styles from './DraftAnimation.module.css';
+
+const DraftAnimation = ({ player, team, onComplete }) => {
+  useEffect(() => {
+    // Auto cleanup after 10 seconds
+    const timer = setTimeout(onComplete, 10000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  if (!player || !team) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div 
+        className={styles.animationContainer}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+      >
+        {/* Background flash */}
+        <motion.div 
+          className={styles.flash}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ 
+            opacity: [0, 1, 0],
+            scale: [0, 1.5, 3],
+          }}
+          transition={{ 
+            duration: 1,
+            times: [0, 0.3, 1]
+          }}
+        />
+
+        {/* Team color bars */}
+        <motion.div 
+          className={styles.bars}
+          style={{ '--team-primary': team.colors[0], '--team-secondary': team.colors[1] }}
+        >
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className={styles.bar}
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{
+                duration: 0.4,
+                delay: i * 0.1,
+                ease: "easeOut"
+              }}
+            />
+          ))}
+        </motion.div>
+
+        {/* Content container */}
+        <motion.div 
+          className={styles.content}
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+        >
+          {/* Team info with stagger animation */}
+          <motion.div className={styles.teamInfo}>
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ 
+                duration: 0.6,
+                delay: 0.7,
+                type: "spring",
+                stiffness: 200
+              }}
+            >
+              <img src={team.logo} alt={team.name} className={styles.teamLogo} />
+            </motion.div>
+            <motion.div
+              className={styles.teamName}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1, duration: 0.4 }}
+            >
+              {team.name}
+            </motion.div>
+          </motion.div>
+
+          {/* Player info with stagger */}
+          <motion.div className={styles.playerInfo}>
+            <motion.div
+              className={styles.selects}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 1.3, duration: 0.4 }}
+            >
+              SELECTS
+            </motion.div>
+            <motion.div
+              className={styles.playerName}
+              initial={{ opacity: 0, scale: 1.2 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.5, duration: 0.4 }}
+            >
+              {player.name}
+            </motion.div>
+            <motion.div
+              className={styles.playerDetails}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.7, duration: 0.4 }}
+            >
+              {player.position} • {player.college}
+            </motion.div>
+          </motion.div>
+        </motion.div>
+
+        {/* Exit animation trigger */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0 }}
+          transition={{ delay: 8.5, duration: 1 }}
+          onAnimationComplete={() => {
+            setTimeout(onComplete, 500);
+          }}
+        />
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+export default DraftAnimation;
