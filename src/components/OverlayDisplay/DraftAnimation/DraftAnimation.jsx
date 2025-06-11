@@ -1,24 +1,20 @@
-import React, { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import styles from './DraftAnimation.module.css';
 
 const DraftAnimation = ({ player, team, onComplete }) => {
-  useEffect(() => {
-    // Auto cleanup after 10 seconds
-    const timer = setTimeout(onComplete, 10000);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
-
   if (!player || !team) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div 
-        className={styles.animationContainer}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+    <motion.div 
+      className={styles.animationContainer}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ 
+        opacity: 0,
+        transition: { duration: 1 }
+      }}
+    >
         {/* Background flash */}
         <motion.div 
           className={styles.flash}
@@ -118,12 +114,9 @@ const DraftAnimation = ({ player, team, onComplete }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 0 }}
           transition={{ delay: 8.5, duration: 1 }}
-          onAnimationComplete={() => {
-            setTimeout(onComplete, 500);
-          }}
+          onAnimationComplete={onComplete}
         />
       </motion.div>
-    </AnimatePresence>
   );
 };
 
