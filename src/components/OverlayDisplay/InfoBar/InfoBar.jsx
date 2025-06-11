@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import styles from './InfoBar.module.css';
 import { draft2024 } from '../../../data/2024DraftResults';
@@ -9,26 +9,6 @@ import { draftPlayers } from '../../../draftPlayers';
 const BestAvailableView = () => {
   // Use the actual players array as source of truth
   const [localPlayers, setLocalPlayers] = React.useState(draftPlayers);
-  const updateTimeoutRef = useRef(null);
-
-  // Cleanup timeout on unmount
-  React.useEffect(() => {
-    return () => {
-      if (updateTimeoutRef.current) {
-        clearTimeout(updateTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Debounced update function
-  const debouncedUpdate = (newPlayers) => {
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current);
-    }
-    updateTimeoutRef.current = setTimeout(() => {
-      setLocalPlayers(newPlayers);
-    }, 100); // 100ms debounce
-  };
 
   React.useEffect(() => {
     const channel = new BroadcastChannel('draft-overlay');
@@ -43,23 +23,23 @@ const BestAvailableView = () => {
       if (type === 'PLAYER_DRAFTED') {
         const { selectedPlayer } = payload;
         if (selectedPlayer) {
-          debouncedUpdate(prev => prev.map(p => 
+          setLocalPlayers(prev => prev.map(p => 
             p.name === selectedPlayer.name ? { ...p, drafted: true } : p
           ));
         }
       } else if (type === 'UNDO_PICK') {
         const { player } = payload;
         if (player) {
-          debouncedUpdate(prev => prev.map(p => 
+          setLocalPlayers(prev => prev.map(p => 
             p.name === player.name ? { ...p, drafted: false } : p
           ));
         }
       } else if (type === 'STATE_UPDATE' && payload?.players) {
-        debouncedUpdate(payload.players);
+        setLocalPlayers(payload.players);
       } else if (type === 'DRAFT_RESET') {
-        debouncedUpdate(draftPlayers);
+        setLocalPlayers(draftPlayers);
       } else if (type === 'PLAYERPOOL_RESET' && payload?.players) {
-        debouncedUpdate(payload.players);
+        setLocalPlayers(payload.players);
       }
     };
 
@@ -214,6 +194,15 @@ const Draft2024View = ({ initialTeamId }) => {
 const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'], currentTeamId }) => {
   const [currentView, setCurrentView] = useState('bestAvailable');
   const channelRef = useRef(null);
+  const cycleTimerRef = useRef(null);
+
+  const startCycleLoop = useCallback(function cycle() {
+    if (cycleTimerRef.current) clearTimeout(cycleTimerRef.current);
+    cycleTimerRef.current = setTimeout(() => {
+      setCurrentView(prev => prev === 'bestAvailable' ? 'draft2024' : 'bestAvailable');
+      startCycleLoop(); // schedule next after current completes
+    }, 10000);
+  }, []);
   
   useEffect(() => {
     channelRef.current = new BroadcastChannel('draft-overlay');
@@ -222,15 +211,23 @@ const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'], currentTeamId }) => {
       const { type, payload } = event.data || {};
       if (type === 'TOGGLE_VIEW') {
         setCurrentView(payload.view);
+        startCycleLoop(); // Reset timer after manual toggle
       }
     };
 
     channelRef.current.addEventListener('message', handleMessage);
+
+    // Start initial cycle loop
+    startCycleLoop();
+
     return () => {
       channelRef.current?.removeEventListener('message', handleMessage);
       channelRef.current?.close();
+      if (cycleTimerRef.current) {
+        clearTimeout(cycleTimerRef.current);
+      }
     };
-  }, []);
+  }, [startCycleLoop]);
 
   return (
     <div 

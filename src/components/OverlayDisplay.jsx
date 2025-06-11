@@ -20,6 +20,7 @@ export default function OverlayDisplay() {
     trade: null
   });
   const channelRef = useRef(null);
+  const lastTeamIdRef = useRef(currentTeamId);
 
 
 
@@ -54,7 +55,7 @@ export default function OverlayDisplay() {
         }
       } 
       else if (event.data.type === 'STATE_UPDATE') {
-        const { currentTeamId, currentPickIndex, timerSeconds, draftOrder: newDraftOrder } = event.data.payload;
+        const { currentTeamId: newTeamId, currentPickIndex, timerSeconds, draftOrder: newDraftOrder } = event.data.payload;
         
         // Batch all state updates in a single React cycle
         React.startTransition(() => {
@@ -64,9 +65,25 @@ export default function OverlayDisplay() {
           }
           
           // Update all other state
-          setCurrentTeamId(currentTeamId);
+          setCurrentTeamId(newTeamId);
           setCurrentPickIndex(currentPickIndex);
           setTimerSeconds(timerSeconds);
+
+          // Check if team changed and trigger onClock animation if needed
+          const isTeamChanged = newTeamId !== lastTeamIdRef.current;
+          const isNotDuringPick = !animations.draft;
+          const isOnClockInactive = !animations.onClock;
+
+          if (isTeamChanged && isNotDuringPick && isOnClockInactive) {
+            const team = findTeamById(newTeamId);
+            setAnimations(prev => ({
+              ...prev,
+              onClock: { team, isNextTeam: false }
+            }));
+          }
+
+          // Update last known team ID
+          lastTeamIdRef.current = newTeamId;
         });
       }
     };
@@ -78,7 +95,7 @@ export default function OverlayDisplay() {
       channelRef.current.removeEventListener('message', handleMessage);
       channelRef.current.close();
     };
-  }, [findTeamById, draftOrder]);
+  }, [findTeamById, draftOrder, animations.draft, animations.onClock]);
 
   // Find current team
   const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];
@@ -114,6 +131,7 @@ export default function OverlayDisplay() {
       </div>
       <AnimationLayer
         animations={animations}
+        currentPickIndex={currentPickIndex}
         onAnimationComplete={(type) => {
           if (type === 'draft') {
             // Clear draft animation
@@ -121,7 +139,7 @@ export default function OverlayDisplay() {
             // Start onClock animation for next team
             const nextTeam = findTeamById(draftOrder[currentPickIndex + 1]);
             if (nextTeam) {
-              setAnimations(prev => ({ ...prev, onClock: { team: nextTeam } }));
+              setAnimations(prev => ({ ...prev, onClock: { team: nextTeam, isNextTeam: true } }));
             }
           } else if (type === 'onClock') {
             // Clear onClock animation

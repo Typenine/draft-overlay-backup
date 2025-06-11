@@ -2,7 +2,15 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import styles from './OnTheClockAnimation.module.css';
 
-const OnTheClockAnimation = ({ team, onComplete }) => {
+// Helper to convert hex to rgb for animation
+const hexToRgb = (hex) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '0, 0, 0';
+};
+
+const OnTheClockAnimation = ({ team, roundNumber, pickNumber, onComplete }) => {
   if (!team) return null;
 
   // CSS variables for team colors
@@ -14,10 +22,13 @@ const OnTheClockAnimation = ({ team, onComplete }) => {
   return (
     <motion.div 
       className={styles.animationContainer}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, backgroundColor: 'rgba(0, 0, 0, 0.95)' }}
+      animate={{ 
+        opacity: 1,
+        backgroundColor: `rgba(${hexToRgb(team.colors[0])}, 0.95)`
+      }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.8 }}
       style={style}
     >
       <div className={styles.accentBars}>
@@ -66,6 +77,17 @@ const OnTheClockAnimation = ({ team, onComplete }) => {
           transition={{ delay: 0.7, duration: 0.5 }}
         >
           IS NOW ON THE CLOCK
+        </motion.div>
+        <motion.div 
+          className={styles.pickInfo}
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.9, duration: 0.5 }}
+          style={{ backgroundColor: team.colors[1] }}
+        >
+          <span>ROUND {roundNumber}</span>
+          <span className={styles.divider} style={{ backgroundColor: team.colors[0] }} />
+          <span>PICK {pickNumber}</span>
         </motion.div>
       </motion.div>
 

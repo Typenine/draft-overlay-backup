@@ -5,8 +5,8 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.9);
   overflow: hidden;
+  position: relative;
 }
 
 .content {
@@ -18,17 +18,28 @@
   color: white;
   text-align: center;
   transform-origin: bottom;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(0, 0, 0, 0.4),
+    transparent
+  );
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .teamLogo {
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.4));
+  margin-bottom: 16px;
 }
 
 .teamName {
-  font-size: 4.5rem;
+  font-size: 5rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -37,15 +48,25 @@
     -2px -2px 0 rgba(0, 0, 0, 0.5),
     2px -2px 0 rgba(0, 0, 0, 0.5),
     -2px 2px 0 rgba(0, 0, 0, 0.5);
+  background: linear-gradient(
+    135deg,
+    var(--team-primary) 0%,
+    var(--team-secondary) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
 .onClockText {
-  font-size: 3rem;
+  font-size: 3.5rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 8px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  margin: 16px 0;
 }
 
 .accentBars {
@@ -71,5 +92,27 @@
     var(--team-secondary) 100%
   );
   transform-origin: left;
-  opacity: 0.15;
+  opacity: 0.2;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.pickInfo {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 24px 48px;
+  border-radius: 16px;
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-top: 24px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.divider {
+  width: 6px;
+  height: 48px;
+  border-radius: 3px;
 }
