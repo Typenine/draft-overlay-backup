@@ -3,12 +3,9 @@ import { teams } from '../teams';
 import styles from './OverlayDisplay.module.css';
 import ClockBox from './OverlayDisplay/ClockBox/ClockBox';
 import { InfoBar } from './OverlayDisplay/InfoBar/InfoBar';
-import Ticker from './OverlayDisplay/Ticker/Ticker';
 import AnimationLayer from './OverlayDisplay/AnimationLayer/AnimationLayer';
 import { defaultDraftOrder } from '../draftOrder';
 import { loadState } from '../utils/storage';
-
-const findTeamById = (id) => teams.find(team => team.id === id);
 
 export default function OverlayDisplay() {
   // Initialize state from localStorage or defaults
@@ -16,28 +13,15 @@ export default function OverlayDisplay() {
   const [currentTeamId, setCurrentTeamId] = useState(savedState?.draftOrder?.[savedState?.currentPickIndex] ?? 1);
   const [currentPickIndex, setCurrentPickIndex] = useState(savedState?.currentPickIndex ?? 0);
   const [timerSeconds, setTimerSeconds] = useState(savedState?.timerSeconds ?? 120);
-  const [isTimerRunning, setIsTimerRunning] = useState(savedState?.isTimerRunning ?? false);
   const [draftOrder, setDraftOrder] = useState(savedState?.draftOrder ?? defaultDraftOrder);
-  const [recentDraftedPlayer, setRecentDraftedPlayer] = useState(null);
-  const [lastPickTimestamp, setLastPickTimestamp] = useState(Date.now());
+  const [animations, setAnimations] = useState({
+    draft: null,
+    onClock: null,
+    trade: null
+  });
   const channelRef = useRef(null);
 
-  // Effect to clear the drafted player after 10 seconds
-  useEffect(() => {
-    if (recentDraftedPlayer) {
-      const currentTimestamp = Date.now();
-      setLastPickTimestamp(currentTimestamp);
-      
-      const timer = setTimeout(() => {
-        // Only clear if this is still the most recent pick
-        if (lastPickTimestamp === currentTimestamp) {
-          setRecentDraftedPlayer(null);
-        }
-      }, 10000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [recentDraftedPlayer, lastPickTimestamp]);
+
 
   // Memoize team finding function to avoid stale closures
   const findTeamById = useCallback((id) => teams.find(t => t.id === id), []);
@@ -57,18 +41,20 @@ export default function OverlayDisplay() {
           
           // Find the drafting team and show the announcement
           const draftingTeam = findTeamById(draftOrder[newSelectedPlayer.pickIndex]);
-          setRecentDraftedPlayer({
+          setAnimations(prev => ({
+            ...prev,
+            draft: {
             player: newSelectedPlayer,
             team: draftingTeam
-          });
+          }}));
         } else {
           // If selectedPlayer is null, clear the recent draft
-          setRecentDraftedPlayer(null);
+          setAnimations(prev => ({ ...prev, draft: null }));
           console.log('[Message] Clearing recent draft display');
         }
       } 
       else if (event.data.type === 'STATE_UPDATE') {
-        const { currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder: newDraftOrder } = event.data.payload;
+        const { currentTeamId, currentPickIndex, timerSeconds, draftOrder: newDraftOrder } = event.data.payload;
         
         // Batch all state updates in a single React cycle
         React.startTransition(() => {
@@ -81,7 +67,6 @@ export default function OverlayDisplay() {
           setCurrentTeamId(currentTeamId);
           setCurrentPickIndex(currentPickIndex);
           setTimerSeconds(timerSeconds);
-          setIsTimerRunning(isTimerRunning);
         });
       }
     };
@@ -97,8 +82,6 @@ export default function OverlayDisplay() {
 
   // Find current team
   const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];
-  const [primaryColor, secondaryColor] = currentTeam.colors;
-
   // Format time remaining as MM:SS
   const formatTimeRemaining = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -130,13 +113,20 @@ export default function OverlayDisplay() {
         />
       </div>
       <AnimationLayer
-        animations={{
-          draft: recentDraftedPlayer,
-          onClock: null,
-          trade: null
-        }}
+        animations={animations}
         onAnimationComplete={(type) => {
-          if (type === 'draft') setRecentDraftedPlayer(null);
+          if (type === 'draft') {
+            // Clear draft animation
+            setAnimations(prev => ({ ...prev, draft: null }));
+            // Start onClock animation for next team
+            const nextTeam = findTeamById(draftOrder[currentPickIndex + 1]);
+            if (nextTeam) {
+              setAnimations(prev => ({ ...prev, onClock: { team: nextTeam } }));
+            }
+          } else if (type === 'onClock') {
+            // Clear onClock animation
+            setAnimations(prev => ({ ...prev, onClock: null }));
+          }
         }}
       />
       {/* Ticker component temporarily hidden
