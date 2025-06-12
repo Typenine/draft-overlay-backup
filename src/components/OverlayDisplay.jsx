@@ -136,10 +136,10 @@ export default function OverlayDisplay() {
           if (type === 'draft') {
             // Clear draft animation
             setAnimations(prev => ({ ...prev, draft: null }));
-            // Start onClock animation for next team
-            const nextTeam = findTeamById(draftOrder[currentPickIndex + 1]);
-            if (nextTeam) {
-              setAnimations(prev => ({ ...prev, onClock: { team: nextTeam, isNextTeam: true } }));
+            // Start onClock animation for current team
+            const currentTeam = findTeamById(draftOrder[currentPickIndex]);
+            if (currentTeam) {
+              setAnimations(prev => ({ ...prev, onClock: { team: currentTeam, isNextTeam: false } }));
             }
           } else if (type === 'onClock') {
             // Clear onClock animation
