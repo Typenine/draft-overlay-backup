@@ -1,15 +1,31 @@
+/* Main container that covers the entire viewport */
 .overlay {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  position: fixed;     /* Locks the overlay to the viewport, doesn't scroll with page */
+  top: 0;             /* Aligns to top edge of viewport */
+  bottom: 0;          /* Stretches to bottom edge of viewport */
+  left: 0;            /* Aligns to left edge of viewport */
+  right: 0;           /* Stretches to right edge of viewport */
+  overflow: hidden;    /* Prevents scrollbars from appearing */
 }
 
+/* Container for InfoBar and ClockBox at bottom of screen */
 .topRow {
-  display: flex;
-  width: 1875px; /* ClockBox + InfoBar */
-  height: 145px;
+  position: fixed;     /* Locks to viewport, stays at bottom */
+  bottom: 0;          /* Aligns to bottom edge of viewport */
+  left: 0;            /* Aligns to left edge of viewport */
+  right: 0;           /* Stretches to right edge of viewport */
+  width: 1875px;      /* Fixed width - matches DraftBoard width */
+  height: 145px;      /* Fixed height for InfoBar/ClockBox */
+  display: flex;      /* Allows InfoBar and ClockBox to sit side by side */
+}
+
+/* Container for the DraftBoard - Controls overall positioning in the overlay */
+.draftBoardContainer {
+  position: absolute;  /* Positions relative to nearest positioned ancestor (.overlay) */
+  top: 0;             /* Distance from top of viewport. Increase (e.g., 45px) to move down, decrease (e.g., -20px) to move up */
+  left: 61%;          /* Center horizontally */
+  transform: translateX(-50%);  /* Offset by half width to truly center */
+  height: 578.7px;      /* User-specified height */
+  width: 1875px;      /* Fixed width: matches .topRow width. Must stay 1875px to align with bottom bar */
+  z-index: 20;        /* Stack order: 20 puts it above background but below animations */
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { teams } from '../teams';
 import styles from './OverlayDisplay.module.css';
+import DraftBoard from './OverlayDisplay/DraftBoard/DraftBoard';
 import ClockBox from './OverlayDisplay/ClockBox/ClockBox';
 import { InfoBar } from './OverlayDisplay/InfoBar/InfoBar';
 import AnimationLayer from './OverlayDisplay/AnimationLayer/AnimationLayer';
@@ -114,6 +115,9 @@ export default function OverlayDisplay() {
 
   return (
     <div className={styles.overlay}>
+      <div className={styles.draftBoardContainer}>
+        <DraftBoard draftOrder={draftOrder} currentPickIndex={currentPickIndex} />
+      </div>
       <div className={styles.topRow}>
         <ClockBox
           teamAbbrev={currentTeam?.name?.substring(0, 3).toUpperCase() || 'DET'}

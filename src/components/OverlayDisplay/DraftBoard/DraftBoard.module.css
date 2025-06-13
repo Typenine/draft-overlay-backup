@@ -1,0 +1,121 @@
+/* DraftBoard internal styles - All positioning is handled by OverlayDisplay.module.css */
+
+/* Grid container for all draft picks */
+.grid {
+  display: flex;              /* Enables row/column layout */
+  width: 100%;               /* Takes full width of container */
+  height: 100%;              /* Takes full height of container */
+  gap: 2px;                  /* Space between grid cells */
+  background-color: rgba(0, 0, 0, 0.85);  /* Semi-transparent black background */
+}
+
+/* Left-most column showing pick numbers */
+.pickColumn {
+  width: 40px;                /* Fixed width for pick numbers */
+  flex: 0 0 40px;            /* Prevents column from growing/shrinking */
+  display: flex;             /* Enable vertical flex layout */
+  flex-direction: column;    /* Stack cells vertically */
+  height: 100%;             /* Take full height */
+}
+
+/* Columns for each round (1-4) */
+.roundColumn {
+  width: 372.2px;               /* Fixed width for round columns */
+  flex: 0 0 372.2px;           /* Don't grow or shrink */
+  display: flex;             /* Enable vertical flex layout */
+  flex-direction: column;    /* Stack cells vertically */
+  height: 100%;             /* Take full height */
+}
+
+/* Column header cells (Pick #, Round 1, etc.) */
+.headerCell {
+  height: 42.8px;               /* Header height for 578.7px container */
+  flex: 0 0 42.8px;            /* Don't grow or shrink */
+  min-height: 42.8px;         /* Ensure minimum height */
+  background-color: rgba(240, 9, 9, 0.8);  /* Darker than regular cells */
+  color: white;               /* Header text color */
+  display: flex;              /* Centers content */
+  align-items: center;        /* Vertical centering */
+  justify-content: center;    /* Horizontal centering */
+  font-size: 14px;           /* Header text size */
+  font-weight: bold;          /* Makes header text bold */
+  text-transform: uppercase;  /* UPPERCASE text */
+  letter-spacing: 0.5px;     /* Spaces out letters slightly */
+  border-bottom: 2px solid rgb(0, 213, 255);  /* Subtle bottom border */
+}
+
+/* Cells in the pick number column */
+.pickCell {
+  height: 42.8px;               /* Cell height for 578.7px container */
+  flex: 0 0 42.8px;            /* Don't grow or shrink */
+  min-height: 42.8px;        /* Minimum height */
+  background-color: rgba(0, 0, 0, 0.6);  /* Semi-transparent background */
+  color: white;               /* Pick number text color */
+  display: flex;              /* Centers content */
+  align-items: center;        /* Vertical centering */
+  justify-content: center;    /* Horizontal centering */
+  font-size: 16px;           /* Pick number text size */
+  font-weight: bold;          /* Makes pick numbers bold */
+}
+
+/* Standard grid cells (for team/player info) */
+.cell {
+  height: 42.8px;               /* Cell height for 578.7px container */
+  flex: 0 0 42.8px;            /* Don't grow or shrink */
+  min-height: 42.8px;        /* Minimum height */
+  background-color: rgba(0, 0, 0, 0.6);  /* Semi-transparent background */
+  display: flex;              /* Enables team logo + player name layout */
+  align-items: center;        /* Vertical centering */
+  gap: 8px;                   /* Space between logo and text */
+  padding: 0 12px;            /* Left/right padding for content */
+  position: relative;         /* For absolute positioning of children */
+}
+
+/* Highlights the current pick in the grid */
+.currentPick {
+  background-color: rgba(59, 130, 246, 0.3);  /* Semi-transparent blue highlight */
+  border: 1px solid rgba(59, 130, 246, 0.5);   /* Subtle blue border */
+}
+
+/* Container for team logos in grid cells */
+.teamLogo {
+  width: 38px;                /* Bigger logo container width */
+  height: 38px;               /* Bigger logo container height */
+  flex-shrink: 0;             /* Prevents logo from shrinking */
+  display: flex;              /* Centers logo image */
+  align-items: center;        /* Vertical centering */
+  justify-content: center;    /* Horizontal centering */
+}
+
+/* Team logo image styling */
+.logo {
+  max-width: 100%;            /* Limits width to container */
+  max-height: 100%;           /* Limits height to container */
+  object-fit: contain;        /* Maintains aspect ratio */
+}
+
+/* Container for player name and position */
+.playerInfo {
+  flex: 1;                    /* Takes remaining space after logo */
+  min-width: 0;               /* Allows text to truncate */
+  display: flex;              /* Enables name + position layout */
+  align-items: center;        /* Vertical centering */
+  gap: 8px;                   /* Space between name and position */
+  color: white;               /* Player info text color */
+}
+
+/* Player name text styling */
+.playerName {
+  font-size: 14px;            /* Player name text size */
+  font-weight: 500;           /* Medium weight text */
+  white-space: nowrap;        /* Prevents name wrapping to new line */
+  overflow: hidden;           /* Hides overflow text */
+  text-overflow: ellipsis;    /* Shows ... for truncated text */
+}
+
+/* Player position text styling */
+.position {
+  font-size: 12px;            /* Position text size */
+  color: rgba(255, 255, 255, 0.7);  /* Slightly dimmed text */
+  flex-shrink: 0;             /* Prevents position from shrinking */
+}
