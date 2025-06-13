@@ -36,7 +36,14 @@ export default function OverlayDisplay() {
     const handleMessage = (event) => {
       console.log('[Message] Received message type:', event.data.type);
       
-      if (event.data.type === 'PLAYER_DRAFTED') {
+      if (event.data.type === 'UNDO_PICK') {
+        // Clear all animations when undoing a pick
+        setAnimations({
+          draft: null,
+          onClock: null,
+          trade: null
+        });
+      } else if (event.data.type === 'PLAYER_DRAFTED') {
         const { selectedPlayer: newSelectedPlayer } = event.data.payload;
         if (newSelectedPlayer) {
           console.log('[Message] New player drafted:', newSelectedPlayer.name);

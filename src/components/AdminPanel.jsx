@@ -122,36 +122,36 @@ export default function AdminPanel() {
     if (currentPickIndex > 0) {
       const lastDraftedPlayer = draftHistory[draftHistory.length - 1];
       if (lastDraftedPlayer) {
-        // Update all related state
-        startTransition(() => {
-          // Mark the player as undrafted
-          setPlayers(prev => prev.map(p => 
-            p.name === lastDraftedPlayer.name ? { ...p, drafted: false } : p
-          ));
-          
-          // Get the previous pick before updating history
-          const newHistory = draftHistory.slice(0, -1);
-          const previousPick = newHistory[newHistory.length - 1] || null;
-          
-          setDraftHistory(newHistory);
-          setSelectedPlayer(previousPick);
-          setCurrentPickIndex(prev => prev - 1);
-          setTimerSeconds(defaultDuration);
-          setIsTimerRunning(false);
-        });
+        // Mark player as not drafted in players array
+        setPlayers(prev => prev.map(p => 
+          p.name === lastDraftedPlayer.name ? { ...p, drafted: false } : p
+        ));
         
-        // Broadcast updates
+        // Get the previous pick before updating history
+        const newHistory = draftHistory.slice(0, -1);
+        const previousPick = newHistory[newHistory.length - 1] || null;
+        const newPickIndex = currentPickIndex - 1;
+        
+        // Update all state
+        setDraftHistory(newHistory);
+        setSelectedPlayer(previousPick);
+        setCurrentPickIndex(newPickIndex);
+        setTimerSeconds(defaultDuration);
+        setIsTimerRunning(false);
+
+        // Broadcast undo pick and state update
         if (channelRef.current) {
-          // First send the undo pick message
+          // Send undo pick message
           channelRef.current.postMessage({
             type: 'UNDO_PICK',
-            payload: { player: lastDraftedPlayer }
+            payload: { 
+              player: lastDraftedPlayer,
+              pickIndex: newPickIndex
+            }
           });
-          
-          // Then broadcast state update
-          setTimeout(() => {
-            broadcastState();
-          }, 0);
+
+          // Broadcast full state update
+          broadcastState();
         }
       }
     }
@@ -572,7 +572,8 @@ export default function AdminPanel() {
                                 channelRef.current.postMessage({
                                   type: 'PLAYER_DRAFTED',
                                   payload: {
-                                    selectedPlayer: playerWithPick
+                                    selectedPlayer: playerWithPick,
+                                    pickIndex: currentPickIndex
                                   }
                                 });
                               }

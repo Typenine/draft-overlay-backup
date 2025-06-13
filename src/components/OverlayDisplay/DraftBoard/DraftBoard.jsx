@@ -2,9 +2,36 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teams } from '../../../teams';
 import styles from './DraftBoard.module.css';
+import { loadState } from '../../../utils/storage';
 
-const DraftBoard = ({ draftOrder, currentPickIndex }) => {
-  const [draftGrid, setDraftGrid] = useState(Array(48).fill(null)); // 12 picks × 4 rounds
+const positionColors = {
+  'QB': '#C00000',
+  'RB': '#FFC000',
+  'WR': '#0070C0',
+  'TE': '#00B050',
+  'DEF': '#7030A0',
+  'K': '#FF8C42'
+};
+
+const DraftBoard = ({ draftOrder }) => {
+  // Load initial state from localStorage
+  const savedState = loadState();
+  const [currentPickIndex, setCurrentPickIndex] = useState(savedState?.currentPickIndex ?? 0);
+  
+  // Initialize draftGrid from draftHistory
+  const initialGrid = Array(48).fill(null);
+  if (savedState?.draftHistory) {
+    savedState.draftHistory.forEach((pick, index) => {
+      if (pick) {
+        initialGrid[index] = {
+          player: pick.name,
+          position: pick.position,
+          team: draftOrder[index]
+        };
+      }
+    });
+  }
+  const [draftGrid, setDraftGrid] = useState(initialGrid);
   const channelRef = useRef(null);
 
   useEffect(() => {
@@ -13,7 +40,10 @@ const DraftBoard = ({ draftOrder, currentPickIndex }) => {
     const handleMessage = (event) => {
       const { type, payload } = event.data;
       
-      if (type === 'PLAYER_DRAFTED') {
+      if (type === 'STATE_UPDATE') {
+        // Update currentPickIndex when state changes
+        setCurrentPickIndex(payload.currentPickIndex);
+      } else if (type === 'PLAYER_DRAFTED') {
         const { selectedPlayer, pickIndex } = payload;
         if (selectedPlayer) {
           setDraftGrid(prev => {
@@ -27,10 +57,14 @@ const DraftBoard = ({ draftOrder, currentPickIndex }) => {
           });
         }
       } else if (type === 'UNDO_PICK') {
+        // For undo, we only clear the specified pick
         const { pickIndex } = payload;
         setDraftGrid(prev => {
           const newGrid = [...prev];
-          newGrid[pickIndex] = null;
+          // Only clear if there's actually something at this index
+          if (newGrid[pickIndex]) {
+            newGrid[pickIndex] = null;
+          }
           return newGrid;
         });
       } else if (type === 'DRAFT_RESET') {
@@ -49,6 +83,11 @@ const DraftBoard = ({ draftOrder, currentPickIndex }) => {
   const getTeamLogo = (teamId) => {
     const team = teams.find(t => t.id === teamId);
     return team?.logo || '';
+  };
+
+  // Get team by ID
+  const getTeam = (teamId) => {
+    return teams.find(t => t.id === teamId);
   };
 
   return (
@@ -81,6 +120,10 @@ const DraftBoard = ({ draftOrder, currentPickIndex }) => {
                 <div 
                   key={`r${round}p${pickIndex + 1}`}
                   className={`${styles.cell} ${isCurrentPick ? styles.currentPick : ''}`}
+                  style={{
+                    '--team-secondary-color': pick ? `${getTeam(teamId)?.secondaryColor}CC` : undefined,
+                    '--position-color': pick ? positionColors[pick.position] : undefined
+                  }}
                 >
                   <div className={styles.teamLogo}>
                     <img 
