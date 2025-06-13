@@ -119,9 +119,11 @@ const DraftBoard = ({ draftOrder }) => {
               return (
                 <div 
                   key={`r${round}p${pickIndex + 1}`}
-                  className={`${styles.cell} ${isCurrentPick ? styles.currentPick : ''}`}
+                  className={`${styles.cell} ${pick ? styles.filledCell : ''} ${isCurrentPick ? styles.currentPick : ''}`}
                   style={{
-                    '--team-secondary-color': pick ? `${getTeam(teamId)?.secondaryColor}CC` : undefined,
+                    '--team-primary-color': pick ? getTeam(teamId)?.colors[0] : 'rgba(0, 0, 0, 0.6)',
+                    '--team-secondary-color': pick ? getTeam(teamId)?.colors[1] : 'rgba(0, 0, 0, 0.6)',
+                    '--team-tertiary-color': pick ? getTeam(teamId)?.colors[2] || getTeam(teamId)?.colors[1] : 'rgba(0, 0, 0, 0.6)',
                     '--position-color': pick ? positionColors[pick.position] : undefined
                   }}
                 >

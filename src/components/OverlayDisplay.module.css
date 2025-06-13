@@ -22,9 +22,9 @@
 /* Container for the DraftBoard - Controls overall positioning in the overlay */
 .draftBoardContainer {
   position: absolute;  /* Positions relative to nearest positioned ancestor (.overlay) */
-  top: 0;             /* Distance from top of viewport. Increase (e.g., 45px) to move down, decrease (e.g., -20px) to move up */
+  top: -2.0px;        /* Slight upward shift for perfect alignment */
   left: 61%;          /* Center horizontally */
-  transform: translateX(-50%);  /* Offset by half width to truly center */
+  transform: translateX(calc(-50% - 2.2px));  /* Sub-pixel shift left for perfect alignment */
   height: 578.7px;      /* User-specified height */
   width: 1875px;      /* Fixed width: matches .topRow width. Must stay 1875px to align with bottom bar */
   z-index: 20;        /* Stack order: 20 puts it above background but below animations */
