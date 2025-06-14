@@ -42,7 +42,19 @@ export default function AdminPanel() {
   const [showEditor, setShowEditor] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showBestAvailable, setShowBestAvailable] = useState(true);
+  const [isAutodraftEnabled, setIsAutodraftEnabled] = useState(false);
 
+  // Get the best available player by overall rank
+  const getBestAvailablePlayer = useCallback(() => {
+    return players
+      .filter(p => !p.drafted)
+      .reduce((best, current) => {
+        if (!best || current.overallRank < best.overallRank) {
+          return current;
+        }
+        return best;
+      }, null);
+  }, [players]);
 
   // Refs
   const channelRef = useRef(null);
@@ -157,7 +169,48 @@ export default function AdminPanel() {
     }
   }, [currentPickIndex, draftHistory, defaultDuration, broadcastState]);
 
-  // Timer effect with auto-advance
+  // Handle autodraft when timer expires
+  const handleAutodraft = useCallback(() => {
+    const bestPlayer = getBestAvailablePlayer();
+    if (bestPlayer) {
+      // Create selected player with current pick index and timestamp
+      const playerWithPick = {
+        ...bestPlayer,
+        pickIndex: currentPickIndex,
+        timestamp: Date.now(),
+        drafted: true
+      };
+      
+      // Batch update player states
+      startTransition(() => {
+        const updatedPlayers = players.map(p =>
+          p.name === bestPlayer.name ? { ...p, drafted: true } : p
+        );
+        setPlayers(updatedPlayers);
+        setSelectedPlayer(playerWithPick);
+        setDraftHistory(prev => [...prev, playerWithPick]);
+      });
+
+      // Broadcast the player selection
+      if (channelRef.current) {
+        channelRef.current.postMessage({
+          type: 'PLAYER_DRAFTED',
+          payload: {
+            selectedPlayer: playerWithPick,
+            pickIndex: currentPickIndex
+          }
+        });
+      }
+
+      // Advance to next pick
+      handleNextPick();
+    } else {
+      // If no best player available, just advance to next pick
+      handleNextPick();
+    }
+  }, [getBestAvailablePlayer, players, currentPickIndex, handleNextPick, channelRef]);
+
+  // Timer effect with auto-advance and autodraft
   useEffect(() => {
     let interval;
     if (isTimerRunning && timerSeconds > 0) {
@@ -167,11 +220,15 @@ export default function AdminPanel() {
     } else if (timerSeconds === 0) {
       setIsTimerRunning(false);
       if (currentPickIndex < draftOrder.length - 1) {
-        handleNextPick();
+        if (isAutodraftEnabled) {
+          handleAutodraft();
+        } else {
+          handleNextPick();
+        }
       }
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds, currentPickIndex, draftOrder.length, handleNextPick]);
+  }, [isTimerRunning, timerSeconds, currentPickIndex, draftOrder.length, handleNextPick, isAutodraftEnabled, handleAutodraft]);
 
   const handleTimerToggle = useCallback(() => {
     startTransition(() => {
@@ -241,6 +298,12 @@ export default function AdminPanel() {
                   className="ml-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
                 >
                   {showBestAvailable ? 'Show Draft Picks' : 'Show Best Available'}
+                </button>
+                <button
+                  onClick={() => setIsAutodraftEnabled(!isAutodraftEnabled)}
+                  className={`ml-4 px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isAutodraftEnabled ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500' : 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500'}`}
+                >
+                  Autodraft: {isAutodraftEnabled ? 'On' : 'Off'}
                 </button>
               </div>
               <div className="text-lg font-medium text-gray-600">
