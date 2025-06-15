@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from './OnTheClockAnimation.module.css';
 
@@ -11,6 +11,14 @@ const hexToRgb = (hex) => {
 };
 
 const OnTheClockAnimation = ({ team, roundNumber, pickNumber, onComplete }) => {
+  // Debug logging for mount/unmount in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] OnTheClockAnimation mounted - Team: ${team?.name}, Round: ${roundNumber}, Pick: ${pickNumber}`);
+      return () => console.log(`[DEBUG] OnTheClockAnimation unmounted - Team: ${team?.name}, Round: ${roundNumber}, Pick: ${pickNumber}`);
+    }
+  }, [team?.name, roundNumber, pickNumber]);
+
   if (!team) return null;
 
   // CSS variables for team colors

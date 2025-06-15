@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { teams } from '../teams';
 import styles from './OverlayDisplay.module.css';
 import DraftBoard from './OverlayDisplay/DraftBoard/DraftBoard';
@@ -8,7 +8,7 @@ import AnimationLayer from './OverlayDisplay/AnimationLayer/AnimationLayer';
 import { defaultDraftOrder } from '../draftOrder';
 import { loadState } from '../utils/storage';
 
-export default function OverlayDisplay() {
+const OverlayDisplay = React.memo(function OverlayDisplay() {
   // Initialize state from localStorage or defaults
   const savedState = loadState();
   const [currentTeamId, setCurrentTeamId] = useState(savedState?.draftOrder?.[savedState?.currentPickIndex] ?? 1);
@@ -22,8 +22,6 @@ export default function OverlayDisplay() {
   });
   const channelRef = useRef(null);
   const lastTeamIdRef = useRef(currentTeamId);
-
-
 
   // Memoize team finding function to avoid stale closures
   const findTeamById = useCallback((id) => teams.find(t => t.id === id), []);
@@ -105,62 +103,76 @@ export default function OverlayDisplay() {
     };
   }, [findTeamById, draftOrder, animations.draft, animations.onClock]);
 
-  // Find current team
-  const currentTeam = teams.find(team => team.id === currentTeamId) || teams[0];
-  // Format time remaining as MM:SS
-  const formatTimeRemaining = (seconds) => {
+  // Memoize current team lookup
+  const currentTeam = useMemo(() => (
+    teams.find(team => team.id === currentTeamId) || teams[0]
+  ), [currentTeamId]);
+
+  // Memoize time formatting function
+  const formatTimeRemaining = useCallback((seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
-  // Get next teams
-  const nextTeams = [
+  // Memoize next teams calculation
+  const nextTeams = useMemo(() => [
     findTeamById(draftOrder[currentPickIndex + 1]),
     findTeamById(draftOrder[currentPickIndex + 2])
-  ].filter(Boolean);
+  ].filter(Boolean), [findTeamById, draftOrder, currentPickIndex]);
+
+  // Memoize ClockBox props to prevent unnecessary re-renders
+  const clockBoxProps = useMemo(() => ({
+    teamAbbrev: currentTeam?.name?.substring(0, 3).toUpperCase() || 'DET',
+    teamLogo: currentTeam?.logo || null,
+    teamColors: currentTeam?.colors || ['#ffffff', '#ffffff'],
+    roundNumber: Math.floor(currentPickIndex / 12) + 1,
+    pickNumber: (currentPickIndex % 12) + 1,
+    timeRemaining: formatTimeRemaining(timerSeconds),
+    nextTeams
+  }), [currentTeam, currentPickIndex, timerSeconds, formatTimeRemaining, nextTeams]);
+
+  // Memoize InfoBar props
+  const infoBarProps = useMemo(() => ({
+    teamColors: currentTeam?.colors || ['#ffffff', '#ffffff'],
+    currentTeamId
+  }), [currentTeam?.colors, currentTeamId]);
 
   return (
     <div className={styles.overlay}>
       <div className={styles.draftBoardContainer}>
-        <DraftBoard draftOrder={draftOrder} currentPickIndex={currentPickIndex} />
+        <DraftBoard 
+          draftOrder={draftOrder} 
+          currentPickIndex={currentPickIndex} 
+        />
       </div>
       <div className={styles.topRow}>
-        <ClockBox
-          teamAbbrev={currentTeam?.name?.substring(0, 3).toUpperCase() || 'DET'}
-          teamLogo={currentTeam?.logo || null}
-          teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']}
-          roundNumber={Math.floor(currentPickIndex / 12) + 1}
-          pickNumber={(currentPickIndex % 12) + 1}
-          timeRemaining={formatTimeRemaining(timerSeconds)}
-          nextTeams={nextTeams}
-        />
-        <InfoBar 
-          teamColors={currentTeam?.colors || ['#ffffff', '#ffffff']} 
-          currentTeamId={currentTeamId}
-        />
+        <ClockBox {...clockBoxProps} />
+        <InfoBar {...infoBarProps} />
       </div>
       <AnimationLayer
         animations={animations}
-        currentPickIndex={currentPickIndex}
         onAnimationComplete={(type) => {
+          // Clear the completed animation and handle any follow-up animations
           if (type === 'draft') {
-            // Clear draft animation
-            setAnimations(prev => ({ ...prev, draft: null }));
-            // Start onClock animation for current team
-            const currentTeam = findTeamById(draftOrder[currentPickIndex]);
-            if (currentTeam) {
-              setAnimations(prev => ({ ...prev, onClock: { team: currentTeam, isNextTeam: false } }));
-            }
-          } else if (type === 'onClock') {
-            // Clear onClock animation
-            setAnimations(prev => ({ ...prev, onClock: null }));
+            setAnimations(prev => ({
+              ...prev,
+              draft: null,
+              // Start onClock animation for current team after draft
+              onClock: { team: findTeamById(draftOrder[currentPickIndex]), isNextTeam: false }
+            }));
+          } else {
+            // For other animations, just clear them
+            setAnimations(prev => ({ ...prev, [type]: null }));
           }
         }}
+        currentPickIndex={currentPickIndex}
       />
       {/* Ticker component temporarily hidden
       <Ticker />
       */}
     </div>
   );
-}
+});
+
+export default OverlayDisplay;

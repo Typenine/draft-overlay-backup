@@ -84,10 +84,17 @@ export default function AdminPanel() {
     return () => channelRef.current.close();
   }, []);
 
+  // Error message timeout effect
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(''), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
   // Broadcast state function with guaranteed fresh state
   const broadcastState = useCallback(() => {
-    // Use setTimeout to ensure we're broadcasting after state updates
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (channelRef.current) {
         channelRef.current.postMessage({
           type: 'STATE_UPDATE',
@@ -98,18 +105,19 @@ export default function AdminPanel() {
             isTimerRunning,
             draftOrder,
             selectedPlayer,
-            players, // Include current player list
-            // Only include draftingTeam if there's a selected player
+            players,
             ...(selectedPlayer && { draftingTeam: teams.find(t => t.id === currentTeamId) })
           }
         });
       }
     }, 0);
+    return () => clearTimeout(timer);
   }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer, teams, players]);
 
   // Broadcast state whenever it changes
   useEffect(() => {
-    broadcastState();
+    const cleanup = broadcastState();
+    return cleanup;
   }, [broadcastState]);
 
   const handleNextPick = useCallback(() => {
@@ -401,7 +409,7 @@ export default function AdminPanel() {
                         setTimerSeconds(newDuration);
                       }
                     }}
-                    className="p-2 text-sm bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="p-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="60">1 minute</option>
                     <option value="120">2 minutes</option>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teams } from '../../../teams';
 import styles from './DraftBoard.module.css';
@@ -13,7 +13,47 @@ const positionColors = {
   'K': '#FF8C42'
 };
 
-const DraftBoard = ({ draftOrder }) => {
+// Memoized grid cell component to prevent unnecessary re-renders
+const GridCell = memo(function GridCell({ round, pickIndex, gridIndex, pick, teamId, isCurrentPick, getTeam, getTeamLogo }) {
+  const team = getTeam(teamId);
+  return (
+    <div 
+      key={`r${round}p${pickIndex + 1}`}
+      className={`${styles.cell} ${pick ? styles.filledCell : ''} ${isCurrentPick ? styles.currentPick : ''}`}
+      style={{
+        '--team-primary-color': pick ? team?.colors[0] : 'rgba(0, 0, 0, 0.6)',
+        '--team-secondary-color': pick ? team?.colors[1] : 'rgba(0, 0, 0, 0.6)',
+        '--team-tertiary-color': pick ? team?.colors[2] || team?.colors[1] : 'rgba(0, 0, 0, 0.6)',
+        '--position-color': pick ? positionColors[pick.position] : undefined
+      }}
+    >
+      <div className={styles.teamLogo}>
+        <img 
+          src={getTeamLogo(teamId)} 
+          alt="" 
+          className={styles.logo}
+        />
+      </div>
+      <AnimatePresence mode="wait">
+        {pick && (
+          <motion.div
+            key={`pick-${gridIndex}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className={styles.playerInfo}
+          >
+            <span className={styles.playerName}>{pick.player}</span>
+            <span className={styles.position}>{pick.position}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
+
+const DraftBoard = memo(function DraftBoard({ draftOrder }) {
   // Load initial state from localStorage
   const savedState = loadState();
   const [currentPickIndex, setCurrentPickIndex] = useState(savedState?.currentPickIndex ?? 0);
@@ -79,16 +119,15 @@ const DraftBoard = ({ draftOrder }) => {
     };
   }, [draftOrder]);
 
-  // Get team logo by team ID
-  const getTeamLogo = (teamId) => {
+  // Memoize team lookup functions
+  const getTeamLogo = useCallback((teamId) => {
     const team = teams.find(t => t.id === teamId);
     return team?.logo || '';
-  };
+  }, []);
 
-  // Get team by ID
-  const getTeam = (teamId) => {
-    return teams.find(t => t.id === teamId);
-  };
+  const getTeam = useCallback((teamId) => (
+    teams.find(t => t.id === teamId)
+  ), []);
 
   return (
     <div className={styles.draftBoardContainer}>
@@ -117,39 +156,17 @@ const DraftBoard = ({ draftOrder }) => {
               const isCurrentPick = currentPickIndex === gridIndex;
 
               return (
-                <div 
+                <GridCell
                   key={`r${round}p${pickIndex + 1}`}
-                  className={`${styles.cell} ${pick ? styles.filledCell : ''} ${isCurrentPick ? styles.currentPick : ''}`}
-                  style={{
-                    '--team-primary-color': pick ? getTeam(teamId)?.colors[0] : 'rgba(0, 0, 0, 0.6)',
-                    '--team-secondary-color': pick ? getTeam(teamId)?.colors[1] : 'rgba(0, 0, 0, 0.6)',
-                    '--team-tertiary-color': pick ? getTeam(teamId)?.colors[2] || getTeam(teamId)?.colors[1] : 'rgba(0, 0, 0, 0.6)',
-                    '--position-color': pick ? positionColors[pick.position] : undefined
-                  }}
-                >
-                  <div className={styles.teamLogo}>
-                    <img 
-                      src={getTeamLogo(teamId)} 
-                      alt="" 
-                      className={styles.logo}
-                    />
-                  </div>
-                  <AnimatePresence mode="wait">
-                    {pick && (
-                      <motion.div
-                        key={`pick-${gridIndex}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className={styles.playerInfo}
-                      >
-                        <span className={styles.playerName}>{pick.player}</span>
-                        <span className={styles.position}>{pick.position}</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                  round={round}
+                  pickIndex={pickIndex}
+                  gridIndex={gridIndex}
+                  pick={pick}
+                  teamId={teamId}
+                  isCurrentPick={isCurrentPick}
+                  getTeam={getTeam}
+                  getTeamLogo={getTeamLogo}
+                />
               );
             })}
           </div>
@@ -157,6 +174,6 @@ const DraftBoard = ({ draftOrder }) => {
       </div>
     </div>
   );
-};
+});
 
 export default DraftBoard;

@@ -18,10 +18,11 @@ const AnimationLayer = ({
   const onClockPickIndex = onClock?.isNextTeam ? currentPickIndex + 1 : currentPickIndex;
   return (
     <div className={styles.animationLayer}>
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
       {/* Draft Selection Animation */}
       {draftedPlayer && (
         <DraftAnimation
+          key={`draft-${draftedPlayer.player.name}`}
           player={draftedPlayer.player}
           team={draftedPlayer.team}
           onComplete={() => onAnimationComplete('draft')}
@@ -29,9 +30,10 @@ const AnimationLayer = ({
       )}
 
       </AnimatePresence>
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {onClock && (
           <OnTheClockAnimation 
+            key={`onclock-${onClockPickIndex}`}
             team={onClock.team}
             roundNumber={Math.floor(onClockPickIndex / 12) + 1}
             pickNumber={(onClockPickIndex % 12) + 1}

@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from './DraftAnimation.module.css';
 
 const DraftAnimation = ({ player, team, onComplete }) => {
+  // Debug logging for mount/unmount in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEBUG] DraftAnimation mounted - Player: ${player?.name}, Team: ${team?.name}`);
+      return () => console.log(`[DEBUG] DraftAnimation unmounted - Player: ${player?.name}, Team: ${team?.name}`);
+    }
+  }, [player?.name, team?.name]);
+
   if (!player || !team) return null;
 
   return (
