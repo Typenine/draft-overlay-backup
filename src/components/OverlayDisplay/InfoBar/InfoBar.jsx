@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './InfoBar.module.css';
 import { draft2024 } from '../../../data/2024DraftResults';
 import { draftPlayers } from '../../../draftPlayers';
@@ -313,17 +313,35 @@ const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'], currentTeamId }) => {
     >
       <AnimatePresence mode="wait" initial={false}>
         {currentView === 'bestAvailable' ? (
-          <div key="best-available">
+          <motion.div 
+            key="best-available"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
             <BestAvailableView />
-          </div>
+          </motion.div>
         ) : currentView === 'draft2024' ? (
-          <div key="draft-picks">
+          <motion.div 
+            key="draft-picks"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
             <Draft2024View initialTeamId={currentTeamId} />
-          </div>
+          </motion.div>
         ) : (
-          <div key="team-info">
+          <motion.div 
+            key="team-info"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
             <TeamInfoView currentTeamId={currentTeamId} />
-          </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
