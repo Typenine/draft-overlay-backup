@@ -363,17 +363,18 @@
 
 /* Player name text styling */
 .playerName {
-  font-size: 15px;            /* Player name text size */
-  font-weight: 600;           /* Semi-bold for better readability */
+  font-size: 19px;            /* Maximum size while maintaining card dimensions */
+  font-weight: 700;           /* Bold weight */
   font-family: 'Inter', system-ui, -apple-system, sans-serif;  /* Modern font stack */
-  letter-spacing: -0.2px;    /* Tighter letter spacing */
+  letter-spacing: -0.4px;    /* Tighter letter spacing for larger font */
   white-space: nowrap;        /* Prevents name wrapping */
   overflow: hidden;           /* Hides overflow */
   text-overflow: ellipsis;    /* Shows ... for overflow */
-  color: rgba(255, 255, 255, 0.95);  /* Almost white */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);  /* Subtle text shadow */
+  color: rgba(255, 255, 255, 0.98);  /* High contrast */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);  /* Enhanced shadow for larger text */
   flex: 1;                    /* Takes remaining space */
   min-width: 0;               /* Allows text to truncate */
+  line-height: 1.1;           /* Tighter line height for better vertical fit */
 }
 
 /* Position text styling */
