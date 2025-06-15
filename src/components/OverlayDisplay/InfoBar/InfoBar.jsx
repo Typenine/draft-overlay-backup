@@ -3,6 +3,8 @@ import { AnimatePresence } from 'framer-motion';
 import styles from './InfoBar.module.css';
 import { draft2024 } from '../../../data/2024DraftResults';
 import { draftPlayers } from '../../../draftPlayers';
+import teamInfo2024 from '../../../data/teamInfo2024.json';
+import { teams } from '../../../teams';
 
 
 
@@ -191,15 +193,86 @@ const Draft2024View = ({ initialTeamId }) => {
   );
 };
 
+const getOrdinalSuffix = (n) => {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return 'st';
+  if (j === 2 && k !== 12) return 'nd';
+  if (j === 3 && k !== 13) return 'rd';
+  return 'th';
+};
+
+const TeamInfoView = ({ currentTeamId: initialTeamId }) => {
+  const [currentTeamId, setCurrentTeamId] = useState(initialTeamId);
+  const channelRef = useRef(null);
+
+  useEffect(() => {
+    channelRef.current = new BroadcastChannel('draft-overlay');
+    
+    const handleMessage = (event) => {
+      const { type, payload } = event.data || {};
+      if (type === 'STATE_UPDATE' && payload?.currentTeamId) {
+        setCurrentTeamId(payload.currentTeamId);
+      } else if (type === 'DRAFT_RESET') {
+        setCurrentTeamId(1);
+      }
+    };
+
+    channelRef.current.addEventListener('message', handleMessage);
+    channelRef.current.postMessage({ type: 'REQUEST_STATE' });
+
+    return () => {
+      channelRef.current?.removeEventListener('message', handleMessage);
+      channelRef.current?.close();
+    };
+  }, []);
+
+  const currentTeam = teams.find(team => team.id === currentTeamId);
+  if (!currentTeam) return null;
+
+  const teamInfo = teamInfo2024.find(info => info.teamName.trim() === currentTeam.name.trim());
+  if (!teamInfo) return null;
+
+  return (
+    <div className={styles.teamInfo}>
+      <div className={styles.viewTitle}>Team Info</div>
+      <div className={styles.infoGrid}>
+        <div className={styles.infoRow}>
+          <div className={styles.infoHeader}>Record</div>
+          <div className={styles.infoHeader}>Points For</div>
+          <div className={styles.infoHeader}>Points Against</div>
+          <div className={styles.infoHeader}>Playoff Result</div>
+        </div>
+        <div className={styles.infoRow}>
+          <div className={styles.infoValue}>{teamInfo.record}</div>
+          <div className={styles.infoValue}>
+            {teamInfo.fptsFor}
+            <span className={styles.rank}>{teamInfo.rankFptsFor}{getOrdinalSuffix(teamInfo.rankFptsFor)}</span>
+          </div>
+          <div className={styles.infoValue}>
+            {teamInfo.fptsAgainst}
+            <span className={styles.rank}>{teamInfo.rankFptsAgainst}{getOrdinalSuffix(teamInfo.rankFptsAgainst)}</span>
+          </div>
+          <div className={styles.infoValue}>{teamInfo.playoffResult}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'], currentTeamId }) => {
-  const [currentView, setCurrentView] = useState('bestAvailable');
+  const [currentView, setCurrentView] = useState('teamInfo');
   const channelRef = useRef(null);
   const cycleTimerRef = useRef(null);
 
   const startCycleLoop = useCallback(function cycle() {
     if (cycleTimerRef.current) clearTimeout(cycleTimerRef.current);
     cycleTimerRef.current = setTimeout(() => {
-      setCurrentView(prev => prev === 'bestAvailable' ? 'draft2024' : 'bestAvailable');
+      setCurrentView(prev => {
+        if (prev === 'teamInfo') return 'bestAvailable';
+        if (prev === 'bestAvailable') return 'draft2024';
+        return 'teamInfo';
+      });
       startCycleLoop(); // schedule next after current completes
     }, 10000);
   }, []);
@@ -240,16 +313,16 @@ const InfoBar = ({ teamColors = ['#0076B6', '#B0B7BC'], currentTeamId }) => {
     >
       <AnimatePresence mode="wait" initial={false}>
         {currentView === 'bestAvailable' ? (
-          <div
-            key="best-available"
-          >
+          <div key="best-available">
             <BestAvailableView />
           </div>
-        ) : (
-          <div
-            key="draft-picks"
-          >
+        ) : currentView === 'draft2024' ? (
+          <div key="draft-picks">
             <Draft2024View initialTeamId={currentTeamId} />
+          </div>
+        ) : (
+          <div key="team-info">
+            <TeamInfoView currentTeamId={currentTeamId} />
           </div>
         )}
       </AnimatePresence>
