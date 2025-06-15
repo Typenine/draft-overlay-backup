@@ -23,9 +23,20 @@
 .draftBoardContainer {
   position: absolute;  /* Positions relative to nearest positioned ancestor (.overlay) */
   top: -2.0px;        /* Slight upward shift for perfect alignment */
-  left: 61%;          /* Center horizontally */
+  left: 60.8%;        /* Center horizontally */
   transform: translateX(calc(-50% - 2.2px));  /* Sub-pixel shift left for perfect alignment */
-  height: 578.7px;      /* User-specified height */
+  height: 678.9px;      /* User-specified height */
   width: 1875px;      /* Fixed width: matches .topRow width. Must stay 1875px to align with bottom bar */
   z-index: 20;        /* Stack order: 20 puts it above background but below animations */
+  border: 1px solid transparent;  /* Transparent base for gradient */
+  border-radius: 4px;  /* Rounded corners */
+  background-image: 
+    linear-gradient(to bottom, rgba(253, 207, 33, 0.9), rgba(253, 207, 33, 0.7)),  /* Matches header gradient */
+    linear-gradient(#000, #000);  /* Black background */
+  background-origin: border-box;  /* Extend gradient to border */
+  background-clip: padding-box, border-box;  /* Gradient only shows in border */
+  box-shadow: 
+    0 0 20px rgba(253, 207, 33, 0.15),  /* Outer glow */
+    inset 0 0 10px rgba(253, 207, 33, 0.1);  /* Inner glow */
+  padding: 2px;  /* Space for border effects */
 }

@@ -11,7 +11,7 @@
   border-radius: 6px;         /* Slightly larger rounded corners */
   overflow: hidden;           /* Keep children within rounded corners */
   position: relative;         /* For background pattern */
-  border: 1px solid rgba(253, 207, 33, 0.15);  /* Subtle outer border */
+  border: 1px solid rgb(196, 255, 0);  /* Subtle outer border */
   padding: 2px;              /* Increased space for border */
   margin: 4px;               /* Safe zone margin */
 }
@@ -86,8 +86,8 @@
 
 /* Columns for each round (1-4) */
 .roundColumn {
-  width: 370.2px;               /* Slightly reduced for safe zone */
-  flex: 0 0 370.2px;           /* Don't grow or shrink */
+  width: 371.4px;               /* Slightly reduced for safe zone */
+  flex: 0 0 371.4px;           /* Don't grow or shrink */
   display: flex;             /* Enable vertical flex layout */
   flex-direction: column;    /* Stack cells vertically */
   height: 100%;             /* Take full height */
@@ -146,33 +146,29 @@
 
 /* Cells in the pick number column */
 .pickCell {
-  height: 42.8px;               /* Cell height for 578.7px container */
-  flex: 0 0 42.8px;            /* Don't grow or shrink */
-  min-height: 42.8px;        /* Minimum height */
-  background-color: rgba(0, 0, 0, 0.6);  /* Semi-transparent background */
-  color: white;               /* Pick number text color */
-  display: flex;              /* Centers content */
-  align-items: center;        /* Vertical centering */
-  justify-content: center;    /* Horizontal centering */
-  font-size: 17px;           /* Larger pick number text size */
-  font-weight: bold;          /* Makes pick numbers bold */
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);  /* Text shadow for depth */
+  height: 52.5px;              /* Taller height: (678.9px - 42.8px - 8px) / 12 */
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* Standard grid cells (for team/player info) */
 .cell {
-  height: 42.8px;               /* Cell height for 578.7px container */
-  flex: 0 0 42.8px;            /* Don't grow or shrink */
-  min-height: 42.8px;          /* Minimum height */
-  background-color: rgba(0, 0, 0, 0.6);  /* Semi-transparent background */
-  display: flex;                /* Enables team logo + player name layout */
-  align-items: center;          /* Vertical centering */
-  gap: 10px;                   /* Increased space between logo and text */
-  padding: 0 14px;             /* Increased padding for better spacing */
-  border: 1px solid rgba(253, 207, 33, 0.4);   /* Slightly stronger gold border */
-  position: relative;           /* For absolute positioning of children */
-  transition: all 0.2s ease;   /* Smooth all transitions */
-  backdrop-filter: blur(2px);  /* Slight blur effect */
+  height: 52.5px;              /* Taller height: (678.9px - 42.8px - 8px) / 12 */
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border: 1px solid rgba(253, 207, 33, 0.4);
+  position: relative;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(2px);
 }
 
 /* When a cell has player data, add team color background and position stripe */
