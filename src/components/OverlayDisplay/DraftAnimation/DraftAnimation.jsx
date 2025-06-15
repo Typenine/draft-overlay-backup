@@ -112,7 +112,7 @@ const DraftAnimation = ({ player, team, onComplete }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.7, duration: 0.4 }}
             >
-              {player.position} • {player.college}
+              {player.position} • {player.college} • {player.nflTeam}
             </motion.div>
           </motion.div>
         </motion.div>
