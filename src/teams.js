@@ -11,11 +11,11 @@ export const teams = [
     },
     {
       id: 2,
-      name: "Frank Gore = HOF",
+      name: "Belleview Badgers",
       abbrev: "FGH",
       owner: "Patrick",
-      logo: "https://i.postimg.cc/zXK59BJd/Placeholder-Logos.png",
-      colors: ["#4287f5", "#32a852", null],
+      logo: "https://i.postimg.cc/0NSHwkHL/Belleview-Badgers-Primary-Logo.png",
+      colors: ["#006747", "#1E3952", "#F2F7F9"],
     },
     {
       id: 3,
@@ -54,7 +54,7 @@ export const teams = [
       name: "Red Pandas",
       abbrev: "RDP",
       owner: "Matt M",
-      logo: "https://i.postimg.cc/28MmtWRL/Red-Pandas-Logo.png",
+      logo: "https://i.postimg.cc/4dV6Pn6T/Red-Pandas-Primary-Logo-draft.png",
       colors: ["#c90a00", "#797574", "#38c4f6"],
     },
     {
