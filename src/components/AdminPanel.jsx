@@ -10,7 +10,6 @@ import {
   loadDefaultTimerDuration,
   saveDefaultTimerDuration
 } from '../utils/storage';
-import CountdownTimer from './CountdownTimer';
 
 export default function AdminPanel() {
   // Initialize state from localStorage or defaults
@@ -96,6 +95,8 @@ export default function AdminPanel() {
   const broadcastState = useCallback(() => {
     const timer = setTimeout(() => {
       if (channelRef.current) {
+        // Get draftingTeam outside of postMessage for clarity
+        const draftingTeam = selectedPlayer ? teams.find(t => t.id === currentTeamId) : undefined;
         channelRef.current.postMessage({
           type: 'STATE_UPDATE',
           payload: {
@@ -106,13 +107,14 @@ export default function AdminPanel() {
             draftOrder,
             selectedPlayer,
             players,
-            ...(selectedPlayer && { draftingTeam: teams.find(t => t.id === currentTeamId) })
+            timestamp: Date.now(),
+            ...(draftingTeam && { draftingTeam })
           }
         });
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer, teams, players]);
+  }, [currentTeamId, currentPickIndex, timerSeconds, isTimerRunning, draftOrder, selectedPlayer, players]);
 
   // Broadcast state whenever it changes
   useEffect(() => {
@@ -620,10 +622,11 @@ export default function AdminPanel() {
                                 return;
                               }
 
-                              // Create selected player with current pick index and timestamp
+                              // Create selected player with current pick index, asset ID and timestamp
                               const playerWithPick = {
                                 ...player,
                                 pickIndex: currentPickIndex, // Store which pick this was
+                                pickAssetId: draftOrder[currentPickIndex].assetId, // Store unique asset ID of the pick
                                 timestamp: Date.now(), // Add timestamp to identify new picks
                                 drafted: true // Ensure drafted flag is set
                               };

@@ -1,5 +1,6 @@
 export const draftPlayers = [
   {
+    assetId: "0001",
     name: "Cam Ward",
     position: "QB",
     college: "Miami (FL)",
@@ -11,6 +12,7 @@ export const draftPlayers = [
     drafted: false
   },
   {
+    assetId: "0002",
     name: "Travis Hunter",
     position: "WR",
     college: "Colorado",
@@ -22,6 +24,7 @@ export const draftPlayers = [
     drafted: false
   },
   {
+    assetId: "0003",
     name: "Ashton Jeanty",
     position: "RB",
     college: "Boise State",
@@ -965,9 +968,11 @@ export const draftPlayers = [
     positionRank: 16,
     overallPickNumber: 255,
     acquisitionMethod: "R7 • P39",
-    drafted: false
+    drafted: false,
+    assetId: "0088"
   },
   {
+    assetId: "0101",
     name: "Philadelphia Eagles Defense",
     position: "DEF",
     college: "nan",
@@ -987,7 +992,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0090"
   },
   {
     name: "Minnesota Vikings Defense",
@@ -998,7 +1004,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0091"
   },
   {
     name: "Denver Broncos Defense",
@@ -1009,7 +1016,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0092"
   },
   {
     name: "Baltimore Ravens Defense",
@@ -1020,7 +1028,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0093"
   },
   {
     name: "Pittsburgh Steelers Defense",
@@ -1031,7 +1040,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0094"
   },
   {
     name: "Kansas City Chiefs Defense",
@@ -1042,7 +1052,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0095"
   },
   {
     name: "Buffalo Bills Defense",
@@ -1053,7 +1064,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0096"
   },
   {
     name: "Detroit Lions Defense",
@@ -1064,7 +1076,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0097"
   },
   {
     name: "Dallas Cowboys Defense",
@@ -1075,7 +1088,8 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0098"
   },
   {
     name: "Los Angeles Rams Defense",
@@ -1086,25 +1100,16 @@ export const draftPlayers = [
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,
-    drafted: false
+    drafted: false,
+    assetId: "0099"
   },
   {
-    name: "Washington Commanders Defense",
-    position: "DEF",
-    college: "nan",
-    nflTeam: "nan",
-    overallRank: 100,
-    positionRank: null,
-    overallPickNumber: null,
-    acquisitionMethod: null,
-    drafted: false
-  },
-  {
+    assetId: "0100",
     name: "San Francisco 49ers Defense",
     position: "DEF",
     college: "nan",
     nflTeam: "nan",
-    overallRank: 101,
+    overallRank: 100,
     positionRank: null,
     overallPickNumber: null,
     acquisitionMethod: null,

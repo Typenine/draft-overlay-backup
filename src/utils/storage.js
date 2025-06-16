@@ -1,3 +1,5 @@
+import { DraftPick } from '../draftOrder';
+
 const STORAGE_KEY = 'draftOverlayState';
 const DEFAULT_DRAFT_ORDER_KEY = 'defaultDraftOrder';
 const DEFAULT_TIMER_DURATION_KEY = 'defaultTimerDuration';
@@ -88,7 +90,16 @@ export const loadState = () => {
     if (serializedState === null) {
       return null;
     }
-    return JSON.parse(serializedState);
+    const state = JSON.parse(serializedState);
+    
+    // Convert draftOrder array items back to DraftPick instances if present
+    if (state?.draftOrder) {
+      state.draftOrder = state.draftOrder.map(pick => 
+        pick.assetId ? DraftPick.fromJSON(pick) : pick
+      );
+    }
+    
+    return state;
   } catch (err) {
     console.error('Error loading state from localStorage:', err);
     return null;
@@ -117,7 +128,11 @@ export const saveDefaultDraftOrder = (draftOrder) => {
 export const loadDefaultDraftOrder = () => {
   try {
     const savedOrder = localStorage.getItem(DEFAULT_DRAFT_ORDER_KEY);
-    return savedOrder ? JSON.parse(savedOrder) : null;
+    if (!savedOrder) return null;
+    
+    const order = JSON.parse(savedOrder);
+    // Convert array items back to DraftPick instances if they have assetId
+    return order.map(pick => pick.assetId ? DraftPick.fromJSON(pick) : pick);
   } catch (err) {
     console.error('Error loading default draft order:', err);
     return null;
